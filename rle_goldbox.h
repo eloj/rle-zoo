@@ -18,7 +18,7 @@ size_t goldbox_compress(const uint8_t *src, size_t slen, uint8_t *dest, size_t d
 	size_t rp = 0;
 	size_t wp = 0;
 
-	while (rp < slen && wp < dlen) {
+	while (rp < slen && (wp < dlen || dest == NULL)) {
 		uint8_t cnt = 0;
 
 		// Count number of same bytes, up to 126
@@ -63,7 +63,7 @@ size_t goldbox_compress(const uint8_t *src, size_t slen, uint8_t *dest, size_t d
 size_t goldbox_decompress(const uint8_t *src, size_t slen, uint8_t *dest, size_t dlen) {
 	const uint8_t *send = src + slen;
 	size_t wp = 0;
-	while (wp < dlen && src < send) {
+	while (src < send && (wp < dlen || dest == NULL)) {
 		uint8_t cnt;
 		uint8_t b = *src++;
 		if (b & 0x80) {
