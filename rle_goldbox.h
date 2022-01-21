@@ -1,6 +1,8 @@
 /*
-	Run-Length Encoder, Goldbox Variant
+	Run-Length Encoder/Decoder (RLE), Goldbox Variant
 	Copyright (c) 2022, Eddy L O Jansson. Licensed under The MIT License.
+
+	This code has been specifically crafted to be compatible with the SSI Goldbox games.
 
 	See https://github.com/eloj/rle-eddy
 */
@@ -13,7 +15,7 @@ size_t goldbox_decompress(const uint8_t *src, size_t slen, uint8_t *dest, size_t
 #ifdef RLE_GOLDBOX_IMPLEMENTATION
 #include <assert.h>
 
-// RLE PARAMS: min CPY=1, max CPY=126, min REP=1, max REP=126
+// RLE PARAMS: min CPY=1, max CPY=126, min REP=1, max REP=127
 size_t goldbox_compress(const uint8_t *src, size_t slen, uint8_t *dest, size_t dlen) {
 	size_t rp = 0;
 	size_t wp = 0;
@@ -25,7 +27,7 @@ size_t goldbox_compress(const uint8_t *src, size_t slen, uint8_t *dest, size_t d
 		while ((rp+cnt+1 < slen) && (src[rp+cnt] == src[rp+cnt+1]) && (cnt < 126))
 			++cnt;
 
-		// Output REP
+		// Output REP. Also encode the last characters as a REP, even if it's just one.
 		if (cnt > 0 || (rp+cnt+1 == slen)) {
 			++cnt;
 			if (dest && dlen > 0) {
