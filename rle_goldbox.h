@@ -4,7 +4,7 @@
 
 	This code has been specifically crafted to be compatible with the SSI Goldbox games.
 
-	See https://github.com/eloj/rle-eddy
+	See https://github.com/eloj/rle-zoo
 */
 #include <stdint.h>
 #include <stddef.h>

@@ -3,7 +3,7 @@
 
 A collection of Run-Length Encoders and Decoders. So far there is only one animal in the zoo. It's a very small zoo.
 
-[![Build status](https://github.com/eloj/rle-eddy/workflows/build/badge.svg)](https://github.com/eloj/rle-eddy/actions/workflows/c-cpp.yml)
+[![Build status](https://github.com/eloj/rle-zoo/workflows/build/badge.svg)](https://github.com/eloj/rle-zoo/actions/workflows/c-cpp.yml)
 
 ## Goldbox
 
