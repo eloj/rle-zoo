@@ -51,4 +51,4 @@ backup:
 
 clean:
 	@echo -e $(YELLOW)Cleaning$(NC)
-	rm -f test_rle vgcore.* core.* *.gcda
+	rm -f rle-zoo rle-genops test_rle vgcore.* core.* *.gcda
