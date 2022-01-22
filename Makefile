@@ -28,9 +28,12 @@ CFLAGS=-std=c11 $(OPT) $(CWARNFLAGS) $(WARNFLAGS) $(MISCFLAGS)
 
 .PHONY: clean backup
 
-all: test_rle rle-zoo
+all: test_rle rle-zoo rle-genops
 
 rle-zoo: rle-zoo.c rle_goldbox.h
+	$(CC) $(CFLAGS) $< $(filter %.o, $^) -o $@
+
+rle-genops: rle-genops.c
 	$(CC) $(CFLAGS) $< $(filter %.o, $^) -o $@
 
 test_rle: test_rle.c rle_goldbox.h
