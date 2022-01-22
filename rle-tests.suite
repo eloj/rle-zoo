@@ -1,23 +1,33 @@
 #
 # RLE compression/decompression test suite
 #
+# Tip: You can change a length or hash to something invalid
+#      to get a hexdump of the data to inspect.
+#
 # variant c|d "input"|@input expected-size expected-hash
 goldbox c "" 0 0
+# Encoded as REP 1 A <ff 41>
 goldbox c "A" 2 0xe192cdee
 goldbox c "AA" 2 0xf2305599
+# Encoder quirk: break CPY to encode last character as REP 1 B (<00 41 ff 42> instead of <01 41 42>)
 goldbox c "AB" 4 0x29e010a8
+goldbox c "AABB" 4 0xcf04ca25
+goldbox c "ABBBB" 4 0x1d07b831
+goldbox c "BBBBA" 4 0x9abf4254
 goldbox c "AAAAAAAAAAAAAAAA" 2 0x06ebc713
 goldbox c "ABCDEFGHIJKLMNOP" 18 0xfd007eb6
 goldbox c @tests/R126A 2 0x9ef7237a
 goldbox c @tests/R127A 2 0xaa108be3
 goldbox c @tests/R128A 4 0xb55580db
 goldbox c @tests/R129A 4 0xa6f718ac
+goldbox c @tests/C126 128 0x4dbdcb4c
+# Encoder will not use CPY 127:
+goldbox c @tests/C127 129 0x8cb9ae3f
+# ... nor CPY 128:
+goldbox c @tests/C128 131 0x40283534
+goldbox c @tests/C129 132 0x0cfd0f30
 goldbox d @tests/goldbox/R126A.rle 126 0x694432e3
 goldbox d @tests/goldbox/R127A.rle 127 0x1164d232
 goldbox d @tests/goldbox/R128A.rle 128 0x30a4907a
-goldbox c @tests/C126 128 0x4dbdcb4c
-goldbox c @tests/C127 129 0x8cb9ae3f
-goldbox c @tests/C128 131 0x40283534
-goldbox c @tests/C129 132 0x0cfd0f30
 goldbox d @tests/goldbox/por-title.rle 32017 0x23e299b1
 goldbox d @tests/goldbox/por-item6-57.rle 63 0xc7294001
