@@ -46,7 +46,7 @@ into Electronic Arts IFF ILBM (unverified).
 * CPY: If OP high-bit is CLEAR (equally; signed OP is non-negative), then `OP + 1` literal bytes follows.
 * REP: If OP high-bit is SET (equally; signed OP is negative), the next byte is repeated 257 - OP (or 1 - signed OP) times.
 
-[^fnTN1023] "Understanding PackBits", Apple [Technical Note TN1023](http://web.archive.org/web/20080705155158/http://developer.apple.com/technotes/tn/tn1023.html).
+[^fnTN1023]: "Understanding PackBits", Apple [Technical Note TN1023](http://web.archive.org/web/20080705155158/http://developer.apple.com/technotes/tn/tn1023.html).
 
 ### Goldbox
 
