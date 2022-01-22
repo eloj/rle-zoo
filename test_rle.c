@@ -77,7 +77,9 @@ static struct rle_t* get_rle_byname(const char *name) {
 }
 
 #define TEST_ERRMSG(fmt, ...) \
-	fprintf(stderr, RED "%s:%zu:" NC " error: " fmt "\n", filename, line_no, __VA_ARGS__)
+	fprintf(stderr, RED "%s:%zu:" NC " error: " fmt "\n", filename, line_no __VA_OPT__(,) __VA_ARGS__)
+#define TEST_WARNMSG(fmt, ...) \
+	fprintf(stderr, YELLOW "%s:%zu:" NC " warning: " fmt "\n", filename, line_no __VA_OPT__(,) __VA_ARGS__)
 
 static int run_rle_test(struct rle_t *rle, struct test *te, const char *filename, size_t line_no) {
 	// printf("INPUT:%.*s (%zu bytes)\n", (int)te->len, te->input, te->len);
@@ -193,7 +195,7 @@ int main(int argc, char *argv[]) {
 			struct rle_t * rle = get_rle_byname(method);
 			if (rle) {
 				if (exsize < 0) {
-					fprintf(stderr, "WARNING: Invalid expected size '%d' in line %zu of '%s'\n", exsize, line_no, filename);
+					TEST_WARNMSG("invalid expected size '%d'", exsize);
 					goto nexttest;
 				}
 
@@ -205,7 +207,7 @@ int main(int argc, char *argv[]) {
 					void *raw = NULL;
 					size_t raw_len = 0;
 					if (map_file(input + 1, &raw, &raw_len) != 0) {
-						fprintf(stderr, "WARNING: File error reading '%s' in line %zu of '%s': %m\n", input+1, line_no, filename);
+						TEST_WARNMSG("file error reading '%s': %m", input+1);
 						goto nexttest;
 					} else {
 						te.len = raw_len;
@@ -220,14 +222,14 @@ int main(int argc, char *argv[]) {
 					te.input = malloc(te.len);
 					memcpy(te.input, input + 1, te.len);
 				} else {
-					fprintf(stderr, "WARNING: Invalid input format in line %zu of '%s'\n", line_no, filename);
+					TEST_WARNMSG("invalid input format");
 					goto nexttest;
 				}
 				if (run_rle_test(rle, &te, filename, line_no) != 0) {
 					++failed_tests;
 				}
 			} else {
-				fprintf(stderr, "WARNING: Unknown method '%s' in line %zu of '%s'\n", method, line_no, filename);
+				TEST_WARNMSG("unknown method '%s'", method);
 			}
 
 nexttest:
