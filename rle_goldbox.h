@@ -29,14 +29,14 @@ size_t goldbox_compress(const uint8_t *src, size_t slen, uint8_t *dest, size_t d
 
 		// Output REP. Also encode the last characters as a REP, even if it's just one.
 		if (cnt > 0 || (rp+cnt+1 == slen)) {
-			++cnt;
 			if (dest && dlen > 0) {
-				dest[wp+0] = -(int8_t)cnt;
+				dest[wp+0] = ~cnt;
 				if (wp + 1 < dlen)
 					dest[wp+1] = src[rp];
 			}
 			wp += 2;
 			rp += cnt;
+			rp++;
 			continue;
 		}
 
@@ -49,7 +49,6 @@ size_t goldbox_compress(const uint8_t *src, size_t slen, uint8_t *dest, size_t d
 		// Output CPY
 		if (dest && dlen > 0) {
 			dest[wp+0] = cnt - 1;
-			// assert(wp + cnt + 1 < dlen);
 			// memcpy(dest+wp+1, src+rp, cnt);
 			for (int i = 0 ; i < cnt && wp + 1 + i < dlen ; ++i)
 				dest[wp + 1 + i] = src[rp + i];
@@ -69,14 +68,16 @@ size_t goldbox_decompress(const uint8_t *src, size_t slen, uint8_t *dest, size_t
 		uint8_t cnt;
 		uint8_t b = *src++;
 		if (b & 0x80) {
-			cnt = -(int8_t)b;
-			uint8_t out = *src++;
+			// REP
+			cnt = (~b) + 1; // equiv. -(int8_t)b
 			if (dest && dlen > 0) {
-				// memset(dest + wp, out, cnt);
+				// memset(dest + wp, *src, cnt);
 				for (int i = 0 ; i < cnt && wp + i < dlen ; ++i)
-					dest[wp + i] = out;
+					dest[wp + i] = *src;
 			}
+			++src;
 		} else {
+			// CPY
 			cnt = b + 1;
 			if (dest && dlen > 0) {
 				// memcpy(dest + wp, src, cnt);
