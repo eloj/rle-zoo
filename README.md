@@ -19,6 +19,8 @@ At its most basic, a Run-Length Encoder process input into a series of REP (repe
 the encoding and decoding scheme for a variant is consistent. Post-implementation this is mostly useful for debugging,
 'manual parsing' and reverse-engineering of unknown RLE streams.
 
+It can also generate C tables for implementing table-driven encoders and decoders.
+
 ## Variants
 
 ### Goldbox
