@@ -11,6 +11,14 @@ A collection of Run-Length Encoders and Decoders. So far there is only one anima
 
 At its most basic, a Run-Length Encoder process input into a series of REP (repeat) and CPY (copy) operations.
 
+## Tools
+
+`rle-zoo` can encode and decode files using any of the supplied variants.
+
+`rle-genops` can be used to generate complete code word/OPs lists for supported variants, and contains code that verifies
+the encoding and decoding scheme for a variant is consistent. Post-implementation this is mostly useful for debugging,
+'manual parsing' and reverse-engineering of unknown RLE streams.
+
 ## Variants
 
 ### Goldbox
@@ -41,6 +49,8 @@ This variant is mostly interesting in the ways it's suboptimal; It's slightly sh
 
 To the best of my knowledge, the encoder will never use OPs 0x7e, 0x7f or 0x80, i.e it will never output a literal run of 127 or 128 characters, nor a run of 128 repeated characters.
 
+In addition to not using all the encodings, having both CPY 1 and REP 1 is obviously suboptimal.
+
 It will also insist on encoding the tail of the input as a REP OP if it hits the end while counting literals to CPY.
 
 To the last point, the input `1234` will be encoded as `02 31 32 33 ff 34`, i.e CPY 3 characters, then REP 1 character.
@@ -48,6 +58,12 @@ To the last point, the input `1234` will be encoded as `02 31 32 33 ff 34`, i.e 
 These limits and quirks were determined experimentally using existing game data files. The decoders in the games MAY accept
 more optimal encodings, but the encoder provided here was specifically crafted such that encoding the output of the decoder
 is bit-identitical to the original input.
+
+## TODO
+
+* Add functional conformance tests, e.g verify length determination.
+* Add fuzzing (afl++).
+* Improve `rle-zoo` to behave more like a standard UNIX filter.
 
 ## License
 
