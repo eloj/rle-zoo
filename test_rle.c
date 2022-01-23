@@ -77,9 +77,9 @@ static struct rle_t* get_rle_byname(const char *name) {
 }
 
 #define TEST_ERRMSG(fmt, ...) \
-	fprintf(stderr, RED "%s:%zu:" NC " error: " fmt "\n", filename, line_no __VA_OPT__(,) __VA_ARGS__)
+	fprintf(stderr, "%s:%zu:" RED " error: " NC fmt "\n", filename, line_no __VA_OPT__(,) __VA_ARGS__)
 #define TEST_WARNMSG(fmt, ...) \
-	fprintf(stderr, YELLOW "%s:%zu:" NC " warning: " fmt "\n", filename, line_no __VA_OPT__(,) __VA_ARGS__)
+	fprintf(stderr, "%s:%zu:" YELLOW " warning: " NC fmt "\n", filename, line_no __VA_OPT__(,) __VA_ARGS__)
 
 static int run_rle_test(struct rle_t *rle, struct test *te, const char *filename, size_t line_no) {
 	// printf("INPUT:%.*s (%zu bytes)\n", (int)te->len, te->input, te->len);
