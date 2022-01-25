@@ -61,9 +61,12 @@ static uint32_t crc32c(uint32_t crc, const void *data, size_t len) {
 static void print_hex(const uint8_t *data, size_t len, int width, const char *indent) {
 	for (size_t i = 0 ; i < len ; ++i) {
 		printf("%02x", data[i]);
-		if ((i < len -1) && ((i+1) % width) == 0) printf("%s", indent ? indent : "");
-		else
-		if (i < len - 1) printf(" ");
+		if (i < len -1) {
+			if (indent && *indent && (i+1) % width == 0)
+				printf("%s", indent);
+			else
+				printf(" ");
+		}
 	}
 }
 
@@ -189,6 +192,7 @@ int main(int argc, char *argv[]) {
 		int exsize = 0;
 		unsigned int exhash = 0;
 
+		// TODO: Parsing the hex this way is bad, e.g adding a hex digit up front still pass.
 		int parsed = sscanf(line, "%ms %ms %ms %i %x", &method, &te.actions, &input, &exsize, &exhash);
 		if (parsed >= 3) {
 			printf("<< %s", line);
