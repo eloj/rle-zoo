@@ -2,6 +2,8 @@
 
 #define RLE_GOLDBOX_IMPLEMENTATION
 #include "rle_goldbox.h"
+#define RLE_PACKBITS_IMPLEMENTATION
+#include "rle_packbits.h"
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -18,8 +20,6 @@
 #define YELLOW "\e[1;33m"
 #define NC "\e[0m"
 
-typedef size_t (*rle_fp)(const uint8_t *src, size_t slen, uint8_t *dest, size_t dlen);
-
 static int debug = 1;
 
 struct test {
@@ -29,6 +29,9 @@ struct test {
 	size_t expected_size;
 	uint32_t expected_hash;	// CRC32c for now
 };
+
+// TODO: Variant selection code + tables can be shared.
+typedef size_t (*rle_fp)(const uint8_t *src, size_t slen, uint8_t *dest, size_t dlen);
 
 struct rle_t {
 	const char *name;
@@ -40,9 +43,23 @@ struct rle_t {
 		.compress = goldbox_compress,
 		.decompress = goldbox_decompress
 	},
+	{
+		.name = "packbits",
+		.compress = packbits_compress,
+		.decompress = packbits_decompress
+	},
 };
 
 static const size_t NUM_VARIANTS = sizeof(rle_variants)/sizeof(rle_variants[0]);
+
+static struct rle_t* get_rle_by_name(const char *name) {
+	for (size_t i = 0 ; i < NUM_VARIANTS ; ++i) {
+		if (strcmp(name, rle_variants[i].name) == 0) {
+			return &rle_variants[i];
+		}
+	}
+	return NULL;
+}
 
 /*
 	TODO: Should use some other digest with a simple plain-c implementation.
@@ -68,15 +85,6 @@ static void print_hex(const uint8_t *data, size_t len, int width, const char *in
 				printf(" ");
 		}
 	}
-}
-
-static struct rle_t* get_rle_byname(const char *name) {
-	for (size_t i = 0 ; i < NUM_VARIANTS ; ++i) {
-		if (strcmp(name, rle_variants[i].name) == 0) {
-			return &rle_variants[i];
-		}
-	}
-	return NULL;
 }
 
 #define TEST_ERRMSG(fmt, ...) \
@@ -196,7 +204,7 @@ int main(int argc, char *argv[]) {
 		int parsed = sscanf(line, "%ms %ms %ms %i %x", &method, &te.actions, &input, &exsize, &exhash);
 		if (parsed >= 3) {
 			printf("<< %s", line);
-			struct rle_t * rle = get_rle_byname(method);
+			struct rle_t * rle = get_rle_by_name(method);
 			if (rle) {
 				if (exsize < 0) {
 					TEST_WARNMSG("invalid expected size '%d'", exsize);
