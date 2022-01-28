@@ -32,5 +32,23 @@ goldbox d @tests/goldbox/R128A.rle 128 0x30a4907a
 goldbox d @tests/goldbox/por-title.rle 32017 0x23e299b1
 goldbox d @tests/goldbox/por-item6-57.rle 63 0xc7294001
 
+packbits c "A" 2 0x4271e96d
+packbits c "AA" 2 0xe192cdee
+packbits c "AB" 3 0x89d0023c
+packbits c "AABB" 4 0x01e3f8ea
+packbits c "ABBBB" 4 0x0ea52046
+packbits c "BBBBA" 4 0xe419cc6f
+packbits c "AAAAAAAAAAAAAAAA" 2 0x15495f64
+packbits c "ABCDEFGHIJKLMNOP" 17 0xa81a0e90
+
+packbits c @tests/R126A 2 0x8d55bb0d
+packbits c @tests/R127A 2 0x9ef7237a
+packbits c @tests/R128A 2 0xaa108be3
+packbits c @tests/R129A 4 0x16b6a458
+packbits c @tests/C126 127 0xed57b1f6
+packbits c @tests/C127 128 0x8ef84124
+packbits c @tests/C128 129 0x6560f52f
+packbits c @tests/C129 131 0x1c1c1e9b
+
 packbits d @tests/packbits/tn1023.rle 24 0xef6fc26a
-# packbits c @tests/packbits/tn1023 15 0x8b25afe0
+packbits c @tests/packbits/tn1023 15 0x8b25afe0
