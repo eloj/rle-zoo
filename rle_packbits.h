@@ -42,10 +42,10 @@ size_t packbits_compress(const uint8_t *src, size_t slen, uint8_t *dest, size_t 
 
 		cnt = 0;
 		// Count number of literal bytes, up to 128.
-		while ((rp+cnt+1 < slen) && (src[rp+cnt] != src[rp+cnt+1]) && (cnt < 127))
+		while ((rp+cnt+1 <= slen) && (cnt < 128) && ((rp+cnt+1 == slen) || (src[rp+cnt] != src[rp+cnt+1])))
 			++cnt;
-		++cnt;
 
+		assert(cnt > 0);
 		assert(cnt <= 128);
 
 		// Output CPY
