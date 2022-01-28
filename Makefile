@@ -4,6 +4,8 @@ CWARNFLAGS=-Wstrict-prototypes -Wmissing-prototypes
 MISCFLAGS=-fstack-protector -fvisibility=hidden
 DEVFLAGS=-ggdb -DDEBUG -Wno-unused
 
+RLE_VARIANTS:=rle_goldbox.h rle_packbits.h
+
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
@@ -30,13 +32,13 @@ CFLAGS=-std=c11 $(OPT) $(CWARNFLAGS) $(WARNFLAGS) $(MISCFLAGS)
 
 all: test_rle rle-zoo rle-genops
 
-rle-zoo: rle-zoo.c rle_goldbox.h
+rle-zoo: rle-zoo.c $(RLE_VARIANTS)
 	$(CC) $(CFLAGS) $< $(filter %.o, $^) -o $@
 
 rle-genops: rle-genops.c
 	$(CC) $(CFLAGS) $< $(filter %.o, $^) -o $@
 
-test_rle: test_rle.c rle_goldbox.h
+test_rle: test_rle.c $(RLE_VARIANTS)
 	$(CC) $(CFLAGS) $< $(filter %.o, $^) -o $@
 
 test: all
