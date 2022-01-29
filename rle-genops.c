@@ -3,11 +3,8 @@
 #include <assert.h>
 #include <string.h>
 
-// TODO:
-// * Need way to validate a cmd... you can't encode "CPY 140" .. return rle8, take err ptr, separate function?
-
 typedef struct rle8 (*rle8_decode_fp)(uint8_t input);
-typedef uint8_t (*rle8_encode_fp)(struct rle8 cmd);
+typedef struct rle8 (*rle8_encode_fp)(struct rle8 cmd);
 
 static int opt_usage, opt_genc;
 
@@ -29,7 +26,7 @@ enum RLE_OP {
 
 struct rle8 {
 	enum RLE_OP op;
-	uint8_t cnt;
+	uint8_t cnt; // TODO: rename to 'arg'?
 };
 
 static const char *rle_op_cstr(enum RLE_OP op) {
@@ -48,42 +45,42 @@ static const char *rle_op_cstr(enum RLE_OP op) {
 static struct rle8 rle8_decode_packbits(uint8_t input) {
 	struct rle8 cmd;
 
-	if (input > 128) {
+	if (input > 0x80) {
 		cmd.op = RLE_OP_REP;
 		cmd.cnt = 1 - (int8_t)input;
-	} else if (input < 128) {
+	} else if (input < 0x80) {
 		cmd.op = RLE_OP_CPY;
 		cmd.cnt = input + 1;
-	} else {
+	} else if (input == 0x80) {
 		cmd.op = RLE_OP_NOP;
 		cmd.cnt = 1;
+	} else {
+		// Impossible -- all decodings are valid
+		cmd.op = RLE_OP_INVALID;
+		cmd.cnt = 0;
 	}
 
-	assert(cmd.cnt > 0);
-	assert(cmd.cnt <= 128);
-#if 0
-	... not the way to do this, REP 1 also invalid for this format.
-	if (cmd.cnt == 0 || cmd.cnt > 128) {
-		cmd.op = RLE_OP_INVALID;
-	}
-#endif
+	assert((cmd.op != RLE_OP_REP) || (cmd.cnt <= 128 || cmd.cnt >= 2));
+	assert((cmd.op != RLE_OP_CPY) || (cmd.cnt <= 128 || cmd.cnt >= 1));
 
 	return cmd;
 }
 
-static uint8_t rle8_encode_packbits(struct rle8 cmd) {
-	uint8_t res;
-
-	assert(cmd.op == RLE_OP_CPY || cmd.op == RLE_OP_REP || cmd.op == RLE_OP_NOP);
-	assert(cmd.cnt > 0);
-	assert(cmd.cnt <= 128);
+static struct rle8 rle8_encode_packbits(struct rle8 cmd) {
+	struct rle8 res = { cmd.op, 0 };
 
 	if (cmd.op == RLE_OP_REP) {
-		res = 257 - cmd.cnt; // 1 - (int8_t)cmd.cnt;
+		if (cmd.cnt >= 2 && cmd.cnt <= 128)
+			res.cnt = 257 - cmd.cnt; // 1 - (int8_t)cmd.cnt;
+		else
+			res.op = RLE_OP_INVALID;
 	} else if (cmd.op == RLE_OP_CPY) {
-		res = cmd.cnt - 1;
+		if (cmd.cnt >= 1 && cmd.cnt <= 128)
+			res.cnt = cmd.cnt - 1;
+		else
+			res.op = RLE_OP_INVALID;
 	} else if (cmd.op == RLE_OP_NOP) {
-		res = 0x80;
+		res.cnt = 0x80;
 	}
 
 	return res;
@@ -92,31 +89,38 @@ static uint8_t rle8_encode_packbits(struct rle8 cmd) {
 static struct rle8 rle8_decode_goldbox(uint8_t input) {
 	struct rle8 cmd;
 
-	if (input & 0x80) {
+	if (input > 0x80) {
 		cmd.op = RLE_OP_REP;
 		cmd.cnt = (~input) + 1;
-	} else {
+	} else if (input < 0x7e) {
 		cmd.op = RLE_OP_CPY;
 		cmd.cnt = input + 1;
+	} else {
+		cmd.op = RLE_OP_INVALID;
+		cmd.cnt = 0;
 	}
 
-	assert(cmd.cnt > 0);
-	assert(cmd.cnt <= 128);
+	assert((cmd.op != RLE_OP_REP) || (cmd.cnt <= 127 || cmd.cnt > 0));
+	assert((cmd.op != RLE_OP_CPY) || (cmd.cnt <= 126 || cmd.cnt > 0));
 
 	return cmd;
 }
 
-static uint8_t rle8_encode_goldbox(struct rle8 cmd) {
-	uint8_t res;
-
-	assert(cmd.op == RLE_OP_CPY || cmd.op == RLE_OP_REP);
-	assert(cmd.cnt > 0);
-	assert(cmd.cnt <= 128);
+static struct rle8 rle8_encode_goldbox(struct rle8 cmd) {
+	struct rle8 res = { cmd.op, 0 };
 
 	if (cmd.op == RLE_OP_REP) {
-		res = 1 + (~cmd.cnt);
+		if (cmd.cnt >= 1 && cmd.cnt <= 127)
+			res.cnt = 1 + (~cmd.cnt);
+		else
+			res.op = RLE_OP_INVALID;
 	} else if (cmd.op == RLE_OP_CPY) {
-		res = cmd.cnt - 1;
+		if (cmd.cnt >= 1 && cmd.cnt <= 126)
+			res.cnt = cmd.cnt - 1;
+		else
+			res.op = RLE_OP_INVALID;
+	} else if (cmd.op == RLE_OP_INVALID) {
+		res.cnt = 0x80;
 	}
 
 	return res;
@@ -129,13 +133,17 @@ static int rle8_generate_ops(struct rle_parser *p) {
 		uint8_t b = i;
 
 		struct rle8 cmd = p->rle8_decode(b);
-		uint8_t b_recode = p->rle8_encode(cmd);
 
-		printf("0x%02x (%d/%d) => %s %d\n", b, b, (int8_t)b, rle_op_cstr(cmd.op), cmd.cnt);
+		if (cmd.op != RLE_OP_INVALID) {
+			struct rle8 b_recode = p->rle8_encode(cmd);
+			printf("0x%02x (%d/%d) => %s %d\n", b, b, (int8_t)b, rle_op_cstr(cmd.op), cmd.cnt);
 
-		if (b != b_recode) {
-			printf("ERROR: reencode mismatch: %s %d => 0x%02x\n", rle_op_cstr(cmd.op), cmd.cnt, b_recode);
-			return 1;
+			if (b != b_recode.cnt) {
+				printf("ERROR: reencode mismatch: %s %d => 0x%02x\n", rle_op_cstr(cmd.op), cmd.cnt, b_recode.cnt);
+				return 1;
+			}
+		} else {
+			printf("0x%02x (%d/%d) => %s\n", b, b, (int8_t)b, rle_op_cstr(cmd.op));
 		}
 	}
 	return 0;
@@ -164,22 +172,27 @@ static void rle8_generate_encode_tables(struct rle_parser *p) {
 	int max_len = 1 + 128;
 	printf("static int rle8_tbl_encode_%s[][%d] = {\n", p->name, max_len);
 
-	printf(" // RLE_OP_CPY\n");
+	printf(" // RLE_OP_CPY 0..%d\n", max_len - 1);
 	printf(" { -1");
 	for (int i=1 ; i < max_len ; ++i) {
 		struct rle8 cmd = { RLE_OP_CPY, i };
-		// TODO: need way to validate a cmd... you can't encode "CPY 140" .. return rle8?
-		uint8_t code = p->rle8_encode(cmd);
-		printf(", 0x%02x", code);
+		struct rle8 code = p->rle8_encode(cmd);
+		if (code.op != RLE_OP_INVALID)
+			printf(", 0x%02x", code.cnt);
+		else
+			printf(", -1");
 	}
 	printf(" },\n");
 
-	printf(" // RLE_OP_REP\n");
+	printf(" // RLE_OP_REP 0..%d\n", max_len - 1);
 	printf(" { -1");
 	for (int i=1 ; i < max_len ; ++i) {
 		struct rle8 cmd = { RLE_OP_REP, i };
-		uint8_t code = p->rle8_encode(cmd);
-		printf(", 0x%02x", code);
+		struct rle8 code = p->rle8_encode(cmd);
+		if (code.op != RLE_OP_INVALID)
+			printf(", 0x%02x", code.cnt);
+		else
+			printf(", -1");
 	}
 	printf(" },");
 
