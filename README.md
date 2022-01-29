@@ -23,6 +23,34 @@ It can also generate C tables for implementing table-driven encoders and decoder
 
 ## Variants
 
+### PackBits
+
+The `packbits` variant reportedly originates from the Apple Macintosh[^fnTN1023], but spread far and wide from there, including
+into Electronic Arts IFF ILBM (unverified).
+
+#### PackBits Format
+
+* One OP byte encoding the operation and `length`:
+	* 0x00 => CPY 1
+	* 0x01 => CPY 2
+	* ..
+	* 0x7e => CPY 127
+	* 0x7f => CPY 128
+	* 0x80 => _reserved_
+	* 0x81 => REP 128
+	* 0x82 => REP 127
+	* ..
+	* 0xfe => REP 3
+	* 0xff => REP 2
+
+* CPY: If OP high-bit is CLEAR (equally; signed OP is non-negative), then `OP + 1` literal bytes follows.
+* REP: If OP high-bit is SET (equally; signed OP is negative), the next byte is repeated 257 - OP (or 1 - signed OP) times.
+
+The encoder should not generate 0x80, which is reserved. The technical note from Apple states that a decoder should
+"_[handle] this situation by skipping any flag-counter byte with this value and interpreting the next byte as the next flag-counter byte._"
+
+[^fnTN1023]: "Understanding PackBits", Apple [Technical Note TN1023](http://web.archive.org/web/20080705155158/http://developer.apple.com/technotes/tn/tn1023.html).
+
 ### Goldbox
 
 The `goldbox` variant has been organically hand-crafted to be 100% compatible with the classic Goldbox games _Pool of Radiance_ and _Curse of the Azure Bonds_,

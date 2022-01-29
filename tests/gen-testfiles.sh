@@ -4,7 +4,7 @@
 rep() {
 	C=${1:-0}
 	S=${2:-A}
-	if [ "$C" -ne "0" ]; then
+	if [ "$C" -gt 0 ]; then
 		printf "%.0s$S" $(seq 1 $C)
 	fi
 }
@@ -23,6 +23,10 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
 	rep 64 Aa | cut -c -127 | tr -d '\n' > C127
 	rep 64 Aa > C128
 	rep 65 Aa | cut -c -129 | tr -d '\n' > C129
+
+	cat R128A C128 > R128A_C128
+	cat R128A C129 > R128A_C129
+	cat R128A_C128 R128A > R128A_C128_R128A
 
 	echo "Done."
 fi

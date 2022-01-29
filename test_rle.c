@@ -2,6 +2,8 @@
 
 #define RLE_GOLDBOX_IMPLEMENTATION
 #include "rle_goldbox.h"
+#define RLE_PACKBITS_IMPLEMENTATION
+#include "rle_packbits.h"
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -18,8 +20,6 @@
 #define YELLOW "\e[1;33m"
 #define NC "\e[0m"
 
-typedef size_t (*rle_fp)(const uint8_t *src, size_t slen, uint8_t *dest, size_t dlen);
-
 static int debug = 1;
 
 struct test {
@@ -29,6 +29,9 @@ struct test {
 	size_t expected_size;
 	uint32_t expected_hash;	// CRC32c for now
 };
+
+// TODO: Variant selection code + tables can be shared.
+typedef size_t (*rle_fp)(const uint8_t *src, size_t slen, uint8_t *dest, size_t dlen);
 
 struct rle_t {
 	const char *name;
@@ -40,9 +43,23 @@ struct rle_t {
 		.compress = goldbox_compress,
 		.decompress = goldbox_decompress
 	},
+	{
+		.name = "packbits",
+		.compress = packbits_compress,
+		.decompress = packbits_decompress
+	},
 };
 
 static const size_t NUM_VARIANTS = sizeof(rle_variants)/sizeof(rle_variants[0]);
+
+static struct rle_t* get_rle_by_name(const char *name) {
+	for (size_t i = 0 ; i < NUM_VARIANTS ; ++i) {
+		if (strcmp(name, rle_variants[i].name) == 0) {
+			return &rle_variants[i];
+		}
+	}
+	return NULL;
+}
 
 /*
 	TODO: Should use some other digest with a simple plain-c implementation.
@@ -61,23 +78,19 @@ static uint32_t crc32c(uint32_t crc, const void *data, size_t len) {
 static void print_hex(const uint8_t *data, size_t len, int width, const char *indent) {
 	for (size_t i = 0 ; i < len ; ++i) {
 		printf("%02x", data[i]);
-		if ((i < len -1) && ((i+1) % width) == 0) printf("%s", indent ? indent : "");
-		else
-		if (i < len - 1) printf(" ");
-	}
-}
-
-static struct rle_t* get_rle_byname(const char *name) {
-	for (size_t i = 0 ; i < NUM_VARIANTS ; ++i) {
-		if (strcmp(name, rle_variants[i].name) == 0) {
-			return &rle_variants[i];
+		if (i < len -1) {
+			if (indent && *indent && (i+1) % width == 0)
+				printf("%s", indent);
+			else
+				printf(" ");
 		}
 	}
-	return NULL;
 }
 
 #define TEST_ERRMSG(fmt, ...) \
-	fprintf(stderr, RED "%s:%zu:" NC " error: " fmt "\n", filename, line_no, __VA_ARGS__)
+	fprintf(stderr, "%s:%zu:" RED " error: " NC fmt "\n", filename, line_no __VA_OPT__(,) __VA_ARGS__)
+#define TEST_WARNMSG(fmt, ...) \
+	fprintf(stderr, "%s:%zu:" YELLOW " warning: " NC fmt "\n", filename, line_no __VA_OPT__(,) __VA_ARGS__)
 
 static int run_rle_test(struct rle_t *rle, struct test *te, const char *filename, size_t line_no) {
 	// printf("INPUT:%.*s (%zu bytes)\n", (int)te->len, te->input, te->len);
@@ -187,13 +200,14 @@ int main(int argc, char *argv[]) {
 		int exsize = 0;
 		unsigned int exhash = 0;
 
+		// TODO: Parsing the hex this way is bad, e.g adding a hex digit up front still pass.
 		int parsed = sscanf(line, "%ms %ms %ms %i %x", &method, &te.actions, &input, &exsize, &exhash);
 		if (parsed >= 3) {
 			printf("<< %s", line);
-			struct rle_t * rle = get_rle_byname(method);
+			struct rle_t * rle = get_rle_by_name(method);
 			if (rle) {
 				if (exsize < 0) {
-					fprintf(stderr, "WARNING: Invalid expected size '%d' in line %zu of '%s'\n", exsize, line_no, filename);
+					TEST_WARNMSG("invalid expected size '%d'", exsize);
 					goto nexttest;
 				}
 
@@ -205,7 +219,7 @@ int main(int argc, char *argv[]) {
 					void *raw = NULL;
 					size_t raw_len = 0;
 					if (map_file(input + 1, &raw, &raw_len) != 0) {
-						fprintf(stderr, "WARNING: File error reading '%s' in line %zu of '%s': %m\n", input+1, line_no, filename);
+						TEST_WARNMSG("file error reading '%s': %m", input+1);
 						goto nexttest;
 					} else {
 						te.len = raw_len;
@@ -220,14 +234,14 @@ int main(int argc, char *argv[]) {
 					te.input = malloc(te.len);
 					memcpy(te.input, input + 1, te.len);
 				} else {
-					fprintf(stderr, "WARNING: Invalid input format in line %zu of '%s'\n", line_no, filename);
+					TEST_WARNMSG("invalid input format");
 					goto nexttest;
 				}
 				if (run_rle_test(rle, &te, filename, line_no) != 0) {
 					++failed_tests;
 				}
 			} else {
-				fprintf(stderr, "WARNING: Unknown method '%s' in line %zu of '%s'\n", method, line_no, filename);
+				TEST_WARNMSG("unknown method '%s'", method);
 			}
 
 nexttest:
