@@ -1,7 +1,7 @@
 
 # RLE Zoo
 
-A collection of Run-Length Encoders and Decoders. So far there is only one animal in the zoo. It's a very small zoo.
+A collection of Run-Length Encoders and Decoders. So far there are only two animals in the zoo. It's a very small zoo.
 
 [![Build status](https://github.com/eloj/rle-zoo/workflows/build/badge.svg)](https://github.com/eloj/rle-zoo/actions/workflows/c-cpp.yml)
 
