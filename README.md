@@ -93,7 +93,10 @@ is bit-identitical to the original input.
 
 ## TODO
 
+* Add table-driven encoder driver.
 * Add functional conformance tests, e.g verify length determination.
+* Internal tools should share utility functions.
+* Add more animals. Potential candidates: PCX, BMP(?), TGA, ...
 * Add fuzzing (afl++).
 * Improve `rle-zoo` to behave more like a standard UNIX filter.
 
