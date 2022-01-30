@@ -30,7 +30,7 @@ CFLAGS=-std=c11 $(OPT) $(CWARNFLAGS) $(WARNFLAGS) $(MISCFLAGS)
 
 .PHONY: clean backup
 
-all: test_rle rle-zoo rle-genops rle-parser
+all: rle-zoo rle-genops rle-parser test_rle test_utility
 
 rle-zoo: rle-zoo.c $(RLE_VARIANTS)
 	$(CC) $(CFLAGS) $< $(filter %.o, $^) -o $@
@@ -44,7 +44,11 @@ rle-parser: rle-parser.c ops-goldbox.h ops-packbits.h
 test_rle: test_rle.c $(RLE_VARIANTS)
 	$(CC) $(CFLAGS) $< $(filter %.o, $^) -o $@
 
-test: all
+test_utility: test_utility.c $(RLE_VARIANTS)
+	$(CC) $(CFLAGS) $< $(filter %.o, $^) -o $@
+
+test: test_rle test_utility
+	$(TEST_PREFIX) ./test_utility
 	$(TEST_PREFIX) ./test_rle
 
 ops-%.h: rle-genops
@@ -59,4 +63,4 @@ backup:
 
 clean:
 	@echo -e $(YELLOW)Cleaning$(NC)
-	rm -f rle-zoo rle-genops rle-parser test_rle vgcore.* core.* *.gcda
+	rm -f rle-zoo rle-genops rle-parser test_rle test_utility vgcore.* core.* *.gcda
