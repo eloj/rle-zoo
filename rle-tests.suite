@@ -11,6 +11,7 @@ goldbox c "A" 2 0xe192cdee
 goldbox c "AA" 2 0xf2305599
 # Encoder quirk: break CPY to encode last character as REP 1 B (<00 41 ff 42> instead of <01 41 42>)
 goldbox c "AB" 4 0x29e010a8
+goldbox c "ABB" 4 0x3a4288df
 goldbox c "AABB" 4 0xcf04ca25
 goldbox c "ABBBB" 4 0x1d07b831
 goldbox c "BBBBA" 4 0x9abf4254
@@ -35,6 +36,7 @@ goldbox d @tests/goldbox/por-item6-57.rle 63 0xc7294001
 packbits c "A" 2 0x4271e96d
 packbits c "AA" 2 0xe192cdee
 packbits c "AB" 3 0x89d0023c
+packbits c "ABB" 4 0x29e010a8
 packbits c "AABB" 4 0x01e3f8ea
 packbits c "ABBBB" 4 0x0ea52046
 packbits c "BBBBA" 4 0xe419cc6f
