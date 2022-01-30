@@ -26,7 +26,9 @@
 #define YELLOW "\e[1;33m"
 #define NC "\e[0m"
 
-static int debug = 1;
+static int debug = 1; // Output debug hex dumps for failed tests.
+static int hex_always = 0;
+static int hex_show_offset = 1;
 
 struct test {
 	uint8_t *input;
@@ -81,16 +83,23 @@ static uint32_t crc32c(uint32_t crc, const void *data, size_t len) {
 	return crc;
 }
 
-static void print_hex(const uint8_t *data, size_t len, int width, const char *indent) {
+// TODO: Move to utility code.
+static void dprint_hex(int fd, const uint8_t *data, size_t len, int width, const char *indent, int show_offset) {
 	for (size_t i = 0 ; i < len ; ++i) {
-		printf("%02x", data[i]);
+		if (show_offset && (i % width == 0)) dprintf(fd, "%08zx: ", i);
+		dprintf(fd, "%02x", data[i]);
 		if (i < len -1) {
-			if (indent && *indent && (i+1) % width == 0)
-				printf("%s", indent);
-			else
-				printf(" ");
+			if (indent && *indent && ((i+1) % width == 0)) {
+				dprintf(fd, "%s", indent);
+			} else {
+				dprintf(fd, " ");
+			}
 		}
 	}
+}
+
+static void fprint_hex(FILE *stream, const uint8_t *data, size_t len, int width, const char *indent, int show_offset) {
+	dprint_hex(fileno(stream), data, len, width, indent, show_offset);
 }
 
 #define TEST_ERRMSG(fmt, ...) \
@@ -127,8 +136,8 @@ static int run_rle_test(struct rle_t *rle, struct test *te, const char *filename
 			retval = 1;
 		}
 
-		if (debug && retval != 0) {
-			print_hex(tmp_buf, res, 32, "\n"); printf("\n");
+		if ((debug && retval != 0) || hex_always) {
+			fprint_hex(stdout, tmp_buf, res, 32, "\n", hex_show_offset); printf("\n");
 		}
 	}
 	if (*action == 'd') {
@@ -143,8 +152,8 @@ static int run_rle_test(struct rle_t *rle, struct test *te, const char *filename
 			retval = 1;
 		}
 
-		if (debug && retval != 0) {
-			print_hex(tmp_buf, res, 32, "\n"); printf("\n");
+		if ((debug && retval != 0) || hex_always) {
+			fprint_hex(stdout, tmp_buf, res, 32, "\n", hex_show_offset); printf("\n");
 		}
 	}
 
