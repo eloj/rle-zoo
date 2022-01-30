@@ -17,11 +17,13 @@ At its most basic, a Run-Length Encoder process input into a series of REP (repe
 
 `rle-genops` can be used to generate complete code word/OPs lists for supported variants, and contains code that verifies
 the encoding and decoding scheme for a variant is consistent. Post-implementation this is mostly useful for debugging,
-'manual parsing' and reverse-engineering of unknown RLE streams.
+'manual parsing' and reverse-engineering of unknown RLE streams. It can also generate C tables for implementing table-driven
+encoders and decoders.
 
-It can also generate C tables for implementing table-driven encoders and decoders.
+`rle-parser` can be used to parse a file using the available RLE variants, which could help identify the
+variant used on some unknown data. It also acts as a demonstrator for using `rle-genops` tables.
 
-## Variants
+## Zoo Animals
 
 ### PackBits
 
