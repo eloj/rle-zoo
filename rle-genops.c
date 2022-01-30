@@ -152,14 +152,14 @@ static int rle8_generate_ops(struct rle_parser *p) {
 static void rle8_generate_decode_table(struct rle_parser *p) {
 	printf("\n// Decode table for RLE8 variant '%s'\n", p->name);
 
-	printf("static struct rle8 rle8_tbl_decode_%s[256] = {\n ", p->name);
+	printf("static struct rle8 rle8_tbl_decode_%s[256] = {\n", p->name);
 
 	for (int i=0 ; i < 256 ; ++i) {
 		uint8_t b = i;
 		struct rle8 cmd = p->rle8_decode(b);
-		printf("{ RLE_OP_%s, %d }", rle_op_cstr(cmd.op), cmd.cnt);
+		printf(" /* %02X */ { RLE_OP_%s, %3d }", b, rle_op_cstr(cmd.op), cmd.cnt);
 		if (i < 255) printf(",");
-		if ((i < 255) && ((i+1) % 8) == 0) printf("\n ");
+		if ((i < 255) && ((i+1) % 4) == 0) printf("\n");
 	}
 
 	printf("\n};\n");
