@@ -1,3 +1,9 @@
+/*
+	Run-Length Encoding & Decoding Table Generator
+	Copyright (c) 2022, Eddy L O Jansson. Licensed under The MIT License.
+
+	See https://github.com/eloj/rle-zoo
+*/
 #include <stdio.h>
 #include <stdint.h>
 #include <assert.h>

@@ -1,3 +1,9 @@
+/*
+	RLE Zoo Encode & Decode Tests
+	Copyright (c) 2022, Eddy L O Jansson. Licensed under The MIT License.
+
+	See https://github.com/eloj/rle-zoo
+*/
 #define _GNU_SOURCE
 
 #define RLE_GOLDBOX_IMPLEMENTATION

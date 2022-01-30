@@ -1,3 +1,9 @@
+/*
+	Run-Length Encoding & Decoding Driver
+	Copyright (c) 2022, Eddy L O Jansson. Licensed under The MIT License.
+
+	See https://github.com/eloj/rle-zoo
+*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
