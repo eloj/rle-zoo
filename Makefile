@@ -32,7 +32,11 @@ CFLAGS=-std=c11 $(OPT) $(CWARNFLAGS) $(WARNFLAGS) $(MISCFLAGS)
 
 .PHONY: clean backup
 
-all: rle-zoo rle-genops rle-parser test_rle test_utility
+all: tools tests
+
+tools: rle-zoo rle-genops rle-parser rle-tbldriver
+
+tests: test_rle test_utility
 
 rle-zoo: rle-zoo.c $(RLE_VARIANT_HEADERS)
 	$(CC) $(CFLAGS) $< $(filter %.o, $^) -o $@
@@ -41,6 +45,9 @@ rle-genops: rle-genops.c
 	$(CC) $(CFLAGS) $< $(filter %.o, $^) -o $@
 
 rle-parser: rle-parser.c $(RLE_VARIANT_OPS_HEADERS)
+	$(CC) $(CFLAGS) $< $(filter %.o, $^) -o $@
+
+rle-tbldriver: rle-tbldriver.c $(RLE_VARIANT_OPS_HEADERS)
 	$(CC) $(CFLAGS) $< $(filter %.o, $^) -o $@
 
 test_rle: test_rle.c $(RLE_VARIANT_HEADERS)
