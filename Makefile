@@ -49,7 +49,7 @@ test_rle: test_rle.c $(RLE_VARIANT_HEADERS)
 test_utility: test_utility.c
 	$(CC) $(CFLAGS) $< $(filter %.o, $^) -o $@
 
-test: test_rle test_utility
+test: test_rle test_utility test_example
 	$(TEST_PREFIX) ./test_utility
 	$(TEST_PREFIX) ./test_rle
 
@@ -65,4 +65,4 @@ backup:
 
 clean:
 	@echo -e $(YELLOW)Cleaning$(NC)
-	rm -f rle-zoo rle-genops rle-parser test_rle test_utility $(RLE_VARIANT_OPS_HEADERS) vgcore.* core.* *.gcda
+	rm -f rle-zoo rle-genops rle-parser test_rle test_utility test_example $(RLE_VARIANT_OPS_HEADERS) vgcore.* core.* *.gcda

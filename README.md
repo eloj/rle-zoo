@@ -1,15 +1,33 @@
 
 # RLE Zoo
 
-A collection of Run-Length Encoders and Decoders. So far there are only two animals in the zoo. It's a very small zoo.
-
 [![Build status](https://github.com/eloj/rle-zoo/workflows/build/badge.svg)](https://github.com/eloj/rle-zoo/actions/workflows/c-cpp.yml)
+
+A collection of Run-Length Encoders and Decoders, and associated tooling for exploring this space. So far there are only two animals in the zoo. It's a very small zoo.
 
 ## Run-Length Encoding
 
 "_Run-length encoding (RLE) is a form of lossless data compression in which runs of data (sequences in which the same data value occurs in many consecutive data elements) are stored as a single data value and count, rather than as the original run._" -- [Wikipedia](https://en.wikipedia.org/wiki/Run-length_encoding)
 
 At its most basic, a Run-Length Encoder process input into a series of REP (repeat) and CPY (copy) operations.
+
+## I just need one, what do I do?
+
+The `rle_*.h` files are single-header libraries. If you just need one, any one, I recommend downloading `rle_packbits.h` and
+looking at `test_example.c` for how to use it.
+
+```c
+#define RLE_ZOO_PACKBITS_IMPLEMENTATION
+#include "rle_packbits.h"
+
+int main(void) {
+	const uint8_t input[] = "ABBBBA";
+	size_t len = sizeof(input) - 1;
+
+	// Call with NULL for dest buffer and size to calculate output size.
+	size_t expected_size = packbits_compress(input, len, NULL, 0);
+	...
+```
 
 ## Tools
 
