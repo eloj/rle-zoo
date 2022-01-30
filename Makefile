@@ -4,7 +4,9 @@ CWARNFLAGS=-Wstrict-prototypes -Wmissing-prototypes
 MISCFLAGS=-fstack-protector -fvisibility=hidden
 DEVFLAGS=-ggdb -DDEBUG -Wno-unused
 
-RLE_VARIANTS:=rle_goldbox.h rle_packbits.h
+RLE_VARIANTS:=goldbox packbits
+RLE_VARIANT_HEADERS:=$(addprefix rle_, $(RLE_VARIANTS:=.h))
+RLE_VARIANT_OPS_HEADERS:=$(addprefix ops-, $(RLE_VARIANTS:=.h))
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -32,19 +34,19 @@ CFLAGS=-std=c11 $(OPT) $(CWARNFLAGS) $(WARNFLAGS) $(MISCFLAGS)
 
 all: rle-zoo rle-genops rle-parser test_rle test_utility
 
-rle-zoo: rle-zoo.c $(RLE_VARIANTS)
+rle-zoo: rle-zoo.c $(RLE_VARIANT_HEADERS)
 	$(CC) $(CFLAGS) $< $(filter %.o, $^) -o $@
 
 rle-genops: rle-genops.c
 	$(CC) $(CFLAGS) $< $(filter %.o, $^) -o $@
 
-rle-parser: rle-parser.c ops-goldbox.h ops-packbits.h
+rle-parser: rle-parser.c $(RLE_VARIANT_OPS_HEADERS)
 	$(CC) $(CFLAGS) $< $(filter %.o, $^) -o $@
 
-test_rle: test_rle.c $(RLE_VARIANTS)
+test_rle: test_rle.c $(RLE_VARIANT_HEADERS)
 	$(CC) $(CFLAGS) $< $(filter %.o, $^) -o $@
 
-test_utility: test_utility.c $(RLE_VARIANTS)
+test_utility: test_utility.c
 	$(CC) $(CFLAGS) $< $(filter %.o, $^) -o $@
 
 test: test_rle test_utility
@@ -63,4 +65,4 @@ backup:
 
 clean:
 	@echo -e $(YELLOW)Cleaning$(NC)
-	rm -f rle-zoo rle-genops rle-parser test_rle test_utility vgcore.* core.* *.gcda
+	rm -f rle-zoo rle-genops rle-parser test_rle test_utility $(RLE_VARIANT_OPS_HEADERS) vgcore.* core.* *.gcda
