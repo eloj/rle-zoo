@@ -12,9 +12,9 @@
 #include <stdbool.h>
 #include <err.h>
 
-#define RLE_GOLDBOX_IMPLEMENTATION
+#define RLE_ZOO_GOLDBOX_IMPLEMENTATION
 #include "rle_goldbox.h"
-#define RLE_PACKBITS_IMPLEMENTATION
+#define RLE_ZOO_PACKBITS_IMPLEMENTATION
 #include "rle_packbits.h"
 
 // TODO: Variant selection code + tables can be shared.

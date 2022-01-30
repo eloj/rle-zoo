@@ -6,9 +6,9 @@
 */
 #define _GNU_SOURCE
 
-#define RLE_GOLDBOX_IMPLEMENTATION
+#define RLE_ZOO_GOLDBOX_IMPLEMENTATION
 #include "rle_goldbox.h"
-#define RLE_PACKBITS_IMPLEMENTATION
+#define RLE_ZOO_PACKBITS_IMPLEMENTATION
 #include "rle_packbits.h"
 
 #include <stdint.h>

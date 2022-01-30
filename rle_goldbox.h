@@ -6,13 +6,17 @@
 
 	See https://github.com/eloj/rle-zoo
 */
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 #include <stddef.h>
 
 size_t goldbox_compress(const uint8_t *src, size_t slen, uint8_t *dest, size_t dlen);
 size_t goldbox_decompress(const uint8_t *src, size_t slen, uint8_t *dest, size_t dlen);
 
-#ifdef RLE_GOLDBOX_IMPLEMENTATION
+#ifdef RLE_ZOO_GOLDBOX_IMPLEMENTATION
 #include <assert.h>
 
 // RLE PARAMS: min CPY=1, max CPY=126, min REP=1, max REP=127
@@ -91,5 +95,9 @@ size_t goldbox_decompress(const uint8_t *src, size_t slen, uint8_t *dest, size_t
 	assert(src == send);
 	assert((dest == NULL) || (wp <= dlen));
 	return wp;
+}
+#endif
+
+#ifdef __cplusplus
 }
 #endif

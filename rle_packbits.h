@@ -4,13 +4,17 @@
 
 	See https://github.com/eloj/rle-zoo
 */
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 #include <stddef.h>
 
 size_t packbits_compress(const uint8_t *src, size_t slen, uint8_t *dest, size_t dlen);
 size_t packbits_decompress(const uint8_t *src, size_t slen, uint8_t *dest, size_t dlen);
 
-#ifdef RLE_PACKBITS_IMPLEMENTATION
+#ifdef RLE_ZOO_PACKBITS_IMPLEMENTATION
 #include <assert.h>
 
 // RLE PARAMS: min CPY=1, max CPY=128, min REP=2, max REP=128
@@ -97,5 +101,9 @@ size_t packbits_decompress(const uint8_t *src, size_t slen, uint8_t *dest, size_
 	assert(src == send);
 	assert((dest == NULL) || (wp <= dlen));
 	return wp;
+}
+#endif
+
+#ifdef __cplusplus
 }
 #endif
