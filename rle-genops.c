@@ -3,6 +3,10 @@
 	Copyright (c) 2022, Eddy L O Jansson. Licensed under The MIT License.
 
 	See https://github.com/eloj/rle-zoo
+
+	TODO:
+		Output necessary types or include-file when --genc
+
 */
 #include <stdio.h>
 #include <stdint.h>
@@ -176,10 +180,10 @@ static void rle8_generate_encode_tables(struct rle_parser *p) {
 
 	// TODO: This should be autodetected by max of valid encodings.. rest of table filled out as -1 (invalid)
 	int max_len = 1 + 128;
-	printf("static int rle8_tbl_encode_%s[][%d] = {\n", p->name, max_len);
+	printf("static int16_t rle8_tbl_encode_%s[][%d] = {\n", p->name, max_len);
 
-	printf(" // RLE_OP_CPY 0..%d\n", max_len - 1);
-	printf(" { -1");
+	printf("\t// RLE_OP_CPY 0..%d\n", max_len - 1);
+	printf("\t{ -1");
 	for (int i=1 ; i < max_len ; ++i) {
 		struct rle8 cmd = { RLE_OP_CPY, i };
 		struct rle8 code = p->rle8_encode(cmd);
@@ -190,8 +194,8 @@ static void rle8_generate_encode_tables(struct rle_parser *p) {
 	}
 	printf(" },\n");
 
-	printf(" // RLE_OP_REP 0..%d\n", max_len - 1);
-	printf(" { -1");
+	printf("\t// RLE_OP_REP 0..%d\n", max_len - 1);
+	printf("\t{ -1");
 	for (int i=1 ; i < max_len ; ++i) {
 		struct rle8 cmd = { RLE_OP_REP, i };
 		struct rle8 code = p->rle8_encode(cmd);
@@ -205,11 +209,32 @@ static void rle8_generate_encode_tables(struct rle_parser *p) {
 	printf("\n};\n");
 }
 
+static void rle8_generate_table(struct rle_parser *p) {
+	// TODO: This should be autodetected by max of valid encodings.. rest of table filled out as -1 (invalid)
+	int max_len = 1 + 128;
+
+	printf("static struct rle8_tbl rle8_table_%s = {\n", p->name);
+	printf("\t\"%s\",\n", p->name);
+	printf("\t%d,\n", max_len);
+	printf("\t{\n");
+	printf("\t\t&rle8_tbl_encode_%s[RLE_OP_CPY][0],\n", p->name);
+	printf("\t\t&rle8_tbl_encode_%s[RLE_OP_REP][0],\n", p->name);
+	printf("\t},\n");
+	printf("\trle8_tbl_decode_%s,\n", p->name);
+	printf("\t{\n");
+	// TODO: Determine params from encode arrays (first non-neg entry, last non-neg entry)
+	printf("\t\t{ %d, %d },\n", 1, 128);
+	printf("\t\t{ %d, %d },\n", 2, 128);
+	printf("\t}\n};\n");
+
+};
+
 static void rle8_generate_c_tables(struct rle_parser *p) {
 	printf("%s", gen_header);
 
 	rle8_generate_decode_table(p);
 	rle8_generate_encode_tables(p);
+	rle8_generate_table(p);
 }
 
 struct rle_parser parsers[] = {
