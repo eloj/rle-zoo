@@ -14,6 +14,7 @@ A collection of Run-Length Encoders and Decoders, and associated tooling for exp
 "_Run-length encoding (RLE) is a form of lossless data compression in which runs of data (sequences in which the same data value occurs in many consecutive data elements) are stored as a single data value and count, rather than as the original run._" -- [Wikipedia](https://en.wikipedia.org/wiki/Run-length_encoding)
 
 At its most basic, a Run-Length Encoder process input into a series of REP (repeat) and CPY (copy) operations.
+Sometimes the CPY operation is explicit, sometimes it's in the form of a LIT encoding (literal).
 
 ## I just need one, what do I do?
 
@@ -118,11 +119,19 @@ These limits and quirks were determined experimentally using existing game data 
 more optimal encodings, but the encoder provided here was specifically crafted such that encoding the output of the decoder
 is bit-identitical to the original input.
 
+### PCX
+
+TBD.
+
+#### PCX Format
+
+TBD.
+
 ## TODO
 
 * Add functional conformance tests, e.g verify length determination.
 * Internal tools should share utility functions.
-* Add more animals. Potential candidates: Apple 'icns' Icons, PCX, BMP(?), TGA, ...
+* Add more animals. Potential candidates: Apple 'icns' Icons, BMP(?), TGA, ...
 * Add fuzzing (afl++).
 * Improve `rle-zoo` to behave more like a standard UNIX filter.
 

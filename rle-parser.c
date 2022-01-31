@@ -8,6 +8,7 @@
 		Take optional offset, length args
 		Take debug flag to output ops.
 		Log count + ratios of ops, and CPY->REP and REP->CPY transitions.
+			e.g PCX decode on packbits input; very obviously wrong because almost only LITs
 
 */
 #include <stdio.h>
@@ -23,6 +24,7 @@
 enum RLE_OP {
 	RLE_OP_CPY,
 	RLE_OP_REP,
+	RLE_OP_LIT,
 	RLE_OP_NOP,
 	RLE_OP_INVALID,
 };
@@ -35,9 +37,9 @@ struct rle8 {
 struct rle8_tbl {
 	const char *name;
 	const size_t encode_tbl_len;
-	const int16_t *encode_tbl[2];
+	const int16_t *encode_tbl[3];
 	const struct rle8 *decode_tbl;
-	const size_t minmax_op[2][2];
+	const size_t minmax_op[3][2];
 };
 
 static const char *rle_op_cstr(enum RLE_OP op) {
@@ -46,6 +48,8 @@ static const char *rle_op_cstr(enum RLE_OP op) {
 		res = "CPY";
 	else if (op == RLE_OP_REP)
 		res = "REP";
+	else if (op == RLE_OP_LIT)
+		res = "LIT";
 	else if (op == RLE_OP_NOP)
 		res = "NOP";
 	else if (op == RLE_OP_INVALID)
@@ -55,10 +59,12 @@ static const char *rle_op_cstr(enum RLE_OP op) {
 
 #include "ops-packbits.h"
 #include "ops-goldbox.h"
+#include "ops-pcx.h"
 
 static struct rle8_tbl* rle8_variants[] = {
 	&rle8_table_goldbox,
 	&rle8_table_packbits,
+	&rle8_table_pcx,
 };
 
 static int debugprint = 0;
@@ -142,13 +148,15 @@ static int rle_parse_decode(struct rle8_tbl *rle, const uint8_t *data, size_t le
 		if (op.op != RLE_OP_INVALID) {
 			if (debugprint)
 				printf("%08zx: <%02x> %s %d\n", rp, b, rle_op_cstr(op.op), op.cnt);
-			rp++;
 			if (op.op == RLE_OP_CPY) {
-				rp += op.cnt;
+				rp += 1 + op.cnt;
 				wp += op.cnt;
 			} else if (op.op == RLE_OP_REP) {
-				rp += 1;
+				rp += 2;
 				wp += op.cnt;
+			} else if (op.op == RLE_OP_LIT) {
+				rp += 1;
+				wp += 1;
 			} else if (op.op == RLE_OP_NOP)
 				rp += 1;
 		} else {
@@ -165,6 +173,10 @@ static int rle_parse_decode(struct rle8_tbl *rle, const uint8_t *data, size_t le
 	printf("Parse: rp=%zu, wp=%zu\n", rp, wp);
 	if (rp != len) {
 		return -1;
+	}
+	// HACKY: Expect at least half the input as output.
+	if (wp < len / 2) {
+		return -2;
 	}
 
 	return 0;
