@@ -12,6 +12,7 @@
 #include <stdint.h>
 #include <assert.h>
 #include <string.h>
+#include <limits.h>
 
 typedef struct rle8 (*rle8_decode_fp)(uint8_t input);
 typedef struct rle8 (*rle8_encode_fp)(struct rle8 cmd);
@@ -178,7 +179,7 @@ static void rle8_generate_decode_table(struct rle_parser *p) {
 static void rle8_generate_encode_tables(struct rle_parser *p) {
 	printf("\n// Encode tables for RLE8 variant '%s'\n", p->name);
 
-	// TODO: This should be autodetected by max of valid encodings.. rest of table filled out as -1 (invalid)
+	// TODO: This should be autodetected by max of valid CPY and REP encoding, rest -1
 	int max_len = 1 + 128;
 	printf("static int16_t rle8_tbl_encode_%s[][%d] = {\n", p->name, max_len);
 
@@ -210,8 +211,29 @@ static void rle8_generate_encode_tables(struct rle_parser *p) {
 }
 
 static void rle8_generate_table(struct rle_parser *p) {
-	// TODO: This should be autodetected by max of valid encodings.. rest of table filled out as -1 (invalid)
+	// TODO: This should be autodetected by max of valid CPY and REP encoding, rest -1
 	int max_len = 1 + 128;
+
+	int minmax[2][2] = { { INT_MAX, INT_MIN }, { INT_MAX, INT_MIN } };
+
+	// Determine REP and CPY limits:
+	for (int i=0 ; i < 256 ; ++i) {
+		uint8_t b = i;
+		struct rle8 cmd = p->rle8_decode(b);
+		switch (cmd.op) {
+			case RLE_OP_CPY:
+			case RLE_OP_REP:
+				if (cmd.cnt < minmax[cmd.op][0])
+					minmax[cmd.op][0] = cmd.cnt;
+				if (cmd.cnt > minmax[cmd.op][1])
+					minmax[cmd.op][1] = cmd.cnt;
+				break;
+			case RLE_OP_NOP:
+			case RLE_OP_INVALID:
+				/* NOP */
+				break;
+		}
+	}
 
 	printf("static struct rle8_tbl rle8_table_%s = {\n", p->name);
 	printf("\t\"%s\",\n", p->name);
@@ -222,9 +244,8 @@ static void rle8_generate_table(struct rle_parser *p) {
 	printf("\t},\n");
 	printf("\trle8_tbl_decode_%s,\n", p->name);
 	printf("\t{\n");
-	// TODO: Determine params from encode arrays (first non-neg entry, last non-neg entry)
-	printf("\t\t{ %d, %d },\n", 1, 128);
-	printf("\t\t{ %d, %d },\n", 2, 128);
+	printf("\t\t{ %d, %d },\n", minmax[RLE_OP_CPY][0], minmax[RLE_OP_CPY][1]);
+	printf("\t\t{ %d, %d },\n", minmax[RLE_OP_REP][0], minmax[RLE_OP_REP][1]);
 	printf("\t}\n};\n");
 
 };
