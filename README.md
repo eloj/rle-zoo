@@ -5,9 +5,11 @@
 
 A collection of Run-Length Encoders and Decoders, and associated tooling for exploring this space. So far there are only two animals in the zoo. It's a very small zoo.
 
-_NOTE: WHILE THIS NOTE PERSISTS, I MAY FORCE PUSH TO MASTER_
+* _WHILE THIS NOTE PERSISTS, I MAY FORCE PUSH TO MASTER_
+* The codecs are written foremost to be clear and easy to understand, not for speed.
+* I'm mostly interested in exploring legacy formats.
 
-## Run-Length Encoding
+## What is Run-Length Encoding?
 
 "_Run-length encoding (RLE) is a form of lossless data compression in which runs of data (sequences in which the same data value occurs in many consecutive data elements) are stored as a single data value and count, rather than as the original run._" -- [Wikipedia](https://en.wikipedia.org/wiki/Run-length_encoding)
 
@@ -44,6 +46,11 @@ encoders and decoders.
 variant used on some unknown data. It also acts as a demonstrator for using `rle-genops` tables.
 
 ## Zoo Animals
+
+Currently the following extraordinary specimens are grazing the fertile grounds of this most amazing Zoo:
+
+* Packbits
+* Goldbox
 
 ### PackBits
 
