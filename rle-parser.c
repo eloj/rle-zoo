@@ -32,6 +32,14 @@ struct rle8 {
 	uint8_t cnt;
 };
 
+struct rle8_tbl {
+	const char *name;
+	const size_t encode_tbl_len;
+	const int16_t *encode_tbl[2];
+	const struct rle8 *decode_tbl;
+	const size_t minmax_op[2][2];
+};
+
 static const char *rle_op_cstr(enum RLE_OP op) {
 	const char *res = "UNKNOWN";
 	if (op == RLE_OP_CPY)
@@ -48,29 +56,22 @@ static const char *rle_op_cstr(enum RLE_OP op) {
 #include "ops-packbits.h"
 #include "ops-goldbox.h"
 
-typedef struct rle8 *rle8_decode_tbl;
-
-static rle8_decode_tbl decode_table[] = {
-	rle8_tbl_decode_goldbox,
-	rle8_tbl_decode_packbits,
-};
-
-static const char * decode_table_name[] = {
-	"goldbox",
-	"packbits",
+static struct rle8_tbl* rle8_variants[] = {
+	&rle8_table_goldbox,
+	&rle8_table_packbits,
 };
 
 static int debugprint = 0;
 
-static int rle_parse(const uint8_t *data, size_t len, rle8_decode_tbl tbl, const char *variant) {
-	printf("Parsing %zu byte buffer with '%s'\n", len, variant);
+static int rle_parse(struct rle8_tbl *rle, const uint8_t *data, size_t len) {
+	printf("Parsing %zu byte buffer with '%s'\n", len, rle->name);
 	size_t rp = 0;
 	size_t wp = 0;
 	size_t bailout = 8192;
 
 	while (rp < len) {
 		uint8_t b = data[rp];
-		struct rle8 op = tbl[b];
+		struct rle8 op = rle->decode_tbl[b];
 
 		if (op.op != RLE_OP_INVALID) {
 			if (debugprint)
@@ -94,7 +95,6 @@ static int rle_parse(const uint8_t *data, size_t len, rle8_decode_tbl tbl, const
 			return -3;
 		}
 	}
-
 
 	printf("Parse: rp=%zu, wp=%zu\n", rp, wp);
 	if (rp != len) {
@@ -130,8 +130,9 @@ int main(int argc, char *argv []) {
 		exit(1);
 	}
 
-	for (size_t i = 0 ; i < sizeof(decode_table)/sizeof(decode_table[0]) ; ++i) {
-		int res = rle_parse(buf, p_len, decode_table[i], decode_table_name[i]);
+	for (size_t i = 0 ; i < sizeof(rle8_variants)/sizeof(rle8_variants[0]) ; ++i) {
+		struct rle8_tbl *rle = rle8_variants[i];
+		int res = rle_parse(rle, buf, p_len);
 		if (res == 0) {
 			printf("Parse successful.\n");
 		} else {
