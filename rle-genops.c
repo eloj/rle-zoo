@@ -45,16 +45,23 @@ struct rle8 {
 
 static const char *rle_op_cstr(enum RLE_OP op) {
 	const char *res = "UNKNOWN";
-	if (op == RLE_OP_CPY)
-		res = "CPY";
-	else if (op == RLE_OP_REP)
-		res = "REP";
-	else if (op == RLE_OP_LIT)
-		res = "LIT";
-	else if (op == RLE_OP_NOP)
-		res = "NOP";
-	else if (op == RLE_OP_INVALID)
-		res = "INVALID";
+	switch (op) {
+		case RLE_OP_CPY:
+			res = "CPY";
+			break;
+		case RLE_OP_REP:
+			res = "REP";
+			break;
+		case RLE_OP_LIT:
+			res = "LIT";
+			break;
+		case RLE_OP_NOP:
+			res = "NOP";
+			break;
+		case RLE_OP_INVALID:
+			res = "INVALID";
+			break;
+	}
 	return res;
 }
 
