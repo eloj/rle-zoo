@@ -5,6 +5,8 @@
 
 A collection of Run-Length Encoders and Decoders, and associated tooling for exploring this space. So far there are only two animals in the zoo. It's a very small zoo.
 
+_NOTE: WHILE THIS NOTE PERSISTS, I MAY FORCE PUSH TO MASTER_
+
 ## Run-Length Encoding
 
 "_Run-length encoding (RLE) is a form of lossless data compression in which runs of data (sequences in which the same data value occurs in many consecutive data elements) are stored as a single data value and count, rather than as the original run._" -- [Wikipedia](https://en.wikipedia.org/wiki/Run-length_encoding)
