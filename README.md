@@ -14,7 +14,7 @@ A collection of Run-Length Encoders and Decoders, and associated tooling for exp
 "_Run-length encoding (RLE) is a form of lossless data compression in which runs of data (sequences in which the same data value occurs in many consecutive data elements) are stored as a single data value and count, rather than as the original run._" -- [Wikipedia](https://en.wikipedia.org/wiki/Run-length_encoding)
 
 At its most basic, a Run-Length Encoder process input into a series of REP (repeat) and CPY (copy) operations.
-Sometimes the CPY operation is explicit, sometimes it's in the form of a LIT encoding (literal).
+Sometimes the CPY operation is explicit, sometimes it's in the form of literals (LIT).
 
 ## I just need one, what do I do?
 
@@ -52,6 +52,7 @@ Currently the following extraordinary specimens are grazing the fertile grounds 
 
 * Packbits
 * Goldbox
+* PCX
 
 ### PackBits
 
