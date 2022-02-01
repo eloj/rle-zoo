@@ -30,6 +30,7 @@ struct rle_parser {
 	rle8_decode_fp rle8_decode;
 };
 
+// NOTE: The order and value of these matter.
 enum RLE_OP {
 	RLE_OP_CPY,
 	RLE_OP_REP,
@@ -183,7 +184,7 @@ static struct rle8 rle8_encode_pcx(struct rle8 cmd) {
 	return res;
 }
 
-static int rle8_generate_ops(struct rle_parser *p) {
+static int rle8_display_ops(struct rle_parser *p) {
 	printf("// Automatically generated code table for RLE8 variant '%s'\n", p->name);
 	printf("%s", gen_header);
 	for (int i=0 ; i < 256 ; ++i) {
@@ -276,6 +277,7 @@ static void rle8_generate_table(struct rle_parser *p) {
 	int max_len = 256;
 
 	int minmax[3][2] = { { INT_MAX, INT_MIN }, { INT_MAX, INT_MIN }, { INT_MAX, INT_MIN } };
+	int op_usage[RLE_OP_INVALID + 1] = { 0 };
 
 	// Determine REP and CPY limits:
 	for (int i=0 ; i < 256 ; ++i) {
@@ -295,14 +297,25 @@ static void rle8_generate_table(struct rle_parser *p) {
 				/* NOP */
 				break;
 		}
+		op_usage[cmd.op]++;
 	}
 
-	printf("static struct rle8_tbl rle8_table_%s = {\n", p->name);
+	char buf[1024];
+	int wp = 0;
+	for (int i = RLE_OP_CPY ; i < RLE_OP_INVALID ; ++i) {
+		if (op_usage[i] > 0) {
+			wp += snprintf(buf + wp, sizeof(buf) - 1 - wp, "%sRLE_OP_%s /* %d */", wp == 0 ? "" : " | ", rle_op_cstr(i), op_usage[i]);
+		}
+	}
+
+	printf("\nstatic struct rle8_tbl rle8_table_%s = {\n", p->name);
 	printf("\t\"%s\",\n", p->name);
+	printf("\t%s,\n", buf); // enum RLE_OP op_used;
 	printf("\t%d,\n", max_len);
 	printf("\t{\n");
 	printf("\t\t&rle8_tbl_encode_%s[RLE_OP_CPY][0],\n", p->name);
 	printf("\t\t&rle8_tbl_encode_%s[RLE_OP_REP][0],\n", p->name);
+	printf("\t\t&rle8_tbl_encode_%s[RLE_OP_LIT][0],\n", p->name);
 	printf("\t},\n");
 	printf("\trle8_tbl_decode_%s,\n", p->name);
 	printf("\t{\n");
@@ -446,7 +459,7 @@ int main(int argc, char *argv[]) {
 	if (opt_genc)
 		rle8_generate_c_tables(p);
 	else
-		rle8_generate_ops(p);
+		rle8_display_ops(p);
 
 	return 0;
 }

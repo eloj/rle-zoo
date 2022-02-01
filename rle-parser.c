@@ -36,6 +36,7 @@ struct rle8 {
 
 struct rle8_tbl {
 	const char *name;
+	enum RLE_OP op_used;
 	const size_t encode_tbl_len;
 	const int16_t *encode_tbl[3];
 	const struct rle8 *decode_tbl;
