@@ -74,7 +74,23 @@ static struct rle8_tbl* rle8_variants[] = {
 	&rle8_table_pcx,
 };
 
-static int debugprint = 0;
+static int debug_print = 1;
+static int debug_hex = 1;
+
+// Copied from test_rle.c:
+static void print_hex(const uint8_t *data, size_t len, int width, const char *indent, int show_offset) {
+	for (size_t i = 0 ; i < len ; ++i) {
+		if (show_offset && (i % width == 0)) printf("%08zx: ", i);
+		printf("%02x", data[i]);
+		if (i < len -1) {
+			if (indent && *indent && ((i+1) % width == 0)) {
+				printf("%s", indent);
+			} else {
+				printf(" ");
+			}
+		}
+	}
+}
 
 // Count the number of repeated characters in the buffer `src` of length `len`, up to the maximum `max`.
 // The count is inclusive; for any non-zero length input there's at least one repeated character.
@@ -153,19 +169,30 @@ static int rle_parse_decode(struct rle8_tbl *rle, const uint8_t *data, size_t le
 		struct rle8 op = rle->decode_tbl[b];
 
 		if (op.op != RLE_OP_INVALID) {
-			if (debugprint)
-				printf("%08zx: <%02x> %s %d\n", rp, b, rle_op_cstr(op.op), op.cnt);
+			if (debug_print)
+				printf("%08zx: <%02x> %s", rp, b, rle_op_cstr(op.op));
 			if (op.op == RLE_OP_CPY) {
+				if (debug_print) {
+					printf(" %d", op.cnt);
+					if (debug_hex) {
+						printf(" ; ");
+						print_hex(data + rp + 1, op.cnt, 0, NULL, 0);
+					}
+				}
 				rp += 1 + op.cnt;
 				wp += op.cnt;
 			} else if (op.op == RLE_OP_REP) {
+				if (debug_print)
+					printf(" %02x * %d", data[rp+1], op.cnt);
 				rp += 2;
 				wp += op.cnt;
 			} else if (op.op == RLE_OP_LIT) {
 				rp += 1;
 				wp += 1;
-			} else if (op.op == RLE_OP_NOP)
+			} else if (op.op == RLE_OP_NOP) {
 				rp += 1;
+			}
+			printf("\n");
 		} else {
 			printf("%08zu: <%02x> %s\n", rp, b, rle_op_cstr(op.op));
 			return -2;
@@ -217,8 +244,11 @@ int main(int argc, char *argv []) {
 	}
 
 	struct rle8_tbl *rle = &rle8_table_packbits;
-	if (arg_encode) {
+	if (arg_encode == 1) {
 		rle_parse_encode(rle, buf, p_len);
+	} else if (arg_encode == 2) {
+		rle = &rle8_table_pcx;
+		rle_parse_decode(rle, buf, p_len);
 	} else {
 		for (size_t i = 0 ; i < sizeof(rle8_variants)/sizeof(rle8_variants[0]) ; ++i) {
 			rle = rle8_variants[i];
