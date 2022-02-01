@@ -90,18 +90,18 @@ static struct rle8 rle8_decode_packbits(uint8_t input) {
 }
 
 static struct rle8 rle8_encode_packbits(struct rle8 cmd) {
-	struct rle8 res = { cmd.op, 0 };
+	struct rle8 res = { RLE_OP_INVALID, 0 };
 
 	if (cmd.op == RLE_OP_REP) {
-		if (cmd.cnt >= 2 && cmd.cnt <= 128)
+		if (cmd.cnt >= 2 && cmd.cnt <= 128) {
+			res.op = RLE_OP_REP;
 			res.cnt = 257 - cmd.cnt; // 1 - (int8_t)cmd.cnt;
-		else
-			res.op = RLE_OP_INVALID;
+		}
 	} else if (cmd.op == RLE_OP_CPY) {
-		if (cmd.cnt >= 1 && cmd.cnt <= 128)
+		if (cmd.cnt >= 1 && cmd.cnt <= 128) {
+			res.op = RLE_OP_CPY;
 			res.cnt = cmd.cnt - 1;
-		else
-			res.op = RLE_OP_INVALID;
+		}
 	} else if (cmd.op == RLE_OP_NOP) {
 		res.cnt = 0x80;
 	}
@@ -130,21 +130,19 @@ static struct rle8 rle8_decode_goldbox(uint8_t input) {
 }
 
 static struct rle8 rle8_encode_goldbox(struct rle8 cmd) {
-	struct rle8 res = { cmd.op, 0 };
+	struct rle8 res = { RLE_OP_INVALID, 0 };
 
 	if (cmd.op == RLE_OP_REP) {
-		if (cmd.cnt >= 1 && cmd.cnt <= 127)
+		if (cmd.cnt >= 1 && cmd.cnt <= 127) {
+			res.op = RLE_OP_REP;
 			res.cnt = 1 + (~cmd.cnt);
-		else
-			res.op = RLE_OP_INVALID;
+		}
 	} else if (cmd.op == RLE_OP_CPY) {
-		if (cmd.cnt >= 1 && cmd.cnt <= 126)
+		if (cmd.cnt >= 1 && cmd.cnt <= 126) {
+			res.op = RLE_OP_CPY;
 			res.cnt = cmd.cnt - 1;
-		else
-			res.op = RLE_OP_INVALID;
-	} else if (cmd.op == RLE_OP_INVALID) {
-		res.cnt = 0x80;
-	}
+		}
+	} // else if (cmd.op == RLE_OP_INVALID) res.cnt = 0x80; // XXX: Not sure why we'd want this. Add it as NOP in that case.
 
 	return res;
 }
