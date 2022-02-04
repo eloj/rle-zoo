@@ -2,6 +2,8 @@
 	Run-Length Encoder/Decoder (RLE), PCX Variant
 	Copyright (c) 2022, Eddy L O Jansson. Licensed under The MIT License.
 
+	WORK IN PROGRESS -- NOT FULLY VERIFIED IMPLEMENTATION
+
 	See https://github.com/eloj/rle-zoo
 */
 #ifdef __cplusplus
@@ -16,36 +18,35 @@ size_t pcx_decompress(const uint8_t *src, size_t slen, uint8_t *dest, size_t dle
 
 #ifdef RLE_ZOO_PCX_IMPLEMENTATION
 #include <assert.h>
+#include <stdio.h> // TEMP
 
 size_t pcx_compress(const uint8_t *src, size_t slen, uint8_t *dest, size_t dlen) {
 	size_t rp = 0;
 	size_t wp = 0;
 
 	while (rp < slen && (wp < dlen || dest == NULL)) {
-		uint8_t cnt = 0;
+		size_t cnt = 0;
+		// size_t cnt = rle_count_rep(src + rp, slen - rp, 63);
+		do { ++cnt; } while ((rp + cnt < slen) && (cnt < 63) && (src[rp + cnt - 1] == src[rp + cnt]));
 
-		// Count number of same bytes, up to 63
-
-		// Output REP.
-		if (cnt > 1) {
+		// Output REP, also include any bytes that can't be encoded as a LIT.
+		if (cnt > 1 || ((src[rp] & 0xC0) == 0xC0)) { // or >= 192
+			assert(cnt <= 63);
 			if (dest && dlen > 0) {
+				dest[wp] = 0xC0 | cnt;
+				if (wp + 1 < dlen)
+					dest[wp + 1] = src[rp];
 			}
 			wp += 2;
 			rp += cnt;
-			continue;
+		} else {
+			// Output LIT. PERF: Again, this is probably suboptimal.
+			if (dest && dlen > 0) {
+				dest[wp] = src[rp];
+			}
+			++rp;
+			++wp;
 		}
-
-		cnt = 0;
-		// Count number of literal bytes, up to 191.
-
-		assert(cnt > 0);
-		assert(cnt <= 191);
-
-		// Output LITs
-		if (dest && dlen > 0) {
-		}
-		rp += cnt;
-		wp += cnt + 1;
 	}
 	assert(rp == slen);
 	assert((dest == NULL) || (wp <= dlen));
