@@ -4,6 +4,9 @@
 
 	See https://github.com/eloj/rle-zoo
 */
+#define UTILITY_IMPLEMENTATION
+#include "utility.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -17,6 +20,7 @@
 #define NC "\e[0m"
 
 static int debug = 0;
+static int debug_hex = 1;
 
 /*
 	A -> 1
@@ -206,9 +210,88 @@ static int test_cpy(void) {
 	return fails;
 }
 
+struct escape_test {
+	const char *input;
+	const char *expected_output;
+	size_t expected_len;
+	int expected_err;
+};
+
+static int test_expand_escapes(void) {
+	const char *testname = "expand_escapes";
+	size_t fails = 0;
+	char buf[1024];
+
+	struct escape_test tests[] = {
+		// Expected pass tests:
+		{ "", "", 0, 0 },
+		{ "A", "A", 1, 0 },
+		{ "\\xFF", "\xFF", 1, 0 },
+		{ "A\\x40A", "A@A", 3, 0 },
+		{ "\\0", "\0", 1, 0 },
+		{ "\\1\\32\\128", "\1\40\200", 3, 0 },
+		{ "\\\"", "\"", 1, 0 },
+		{ "\\a\\b\\f\\n\\r\\t\\v", "\a\b\f\n\r\t\v", 7, 0 },
+		// Expected error tests:
+		{ "\\", "", 0, ESC_ERROR },
+		{ "\\x", "", 0, ESC_ERROR_HEX },
+		{ "\\x8", "", 0, ESC_ERROR_HEX }, // NOTE: Should perhaps accept as extension?
+		{ "\\xfz", "", 0, ESC_ERROR_HEX },
+		{ "\\256", "", 0, ESC_ERROR_DEC },
+		{ "\\?", "", 0, ESC_ERROR_CHAR },
+	};
+
+	for (size_t i = 0 ; i < sizeof(tests)/sizeof(tests[0]) ; ++i) {
+		struct escape_test *test = &tests[i];
+		int err, err2;
+
+		size_t res_len = expand_escapes(test->input, strlen(test->input), NULL, 0, &err);
+		if (err != test->expected_err) {
+			TEST_ERRMSG("unexpected error, expected '%d', got '%d' (position %zu).", test->expected_err, err, res_len);
+			++fails;
+			continue;
+		}
+		if (test->expected_err != 0) {
+			// Expected error -- we're done here.
+			continue;
+		}
+
+		if (res_len != test->expected_len) {
+			TEST_ERRMSG("length-determination result mismatch, expected '%zu', got '%zu'.", test->expected_len, res_len);
+			++fails;
+			continue;
+		}
+
+		size_t res = expand_escapes(test->input, strlen(test->input), buf, sizeof(buf), &err);
+		if (res != res_len) {
+			TEST_ERRMSG("output length differs, expected '%zu', got '%zu'.", res_len, res);
+			++fails;
+			continue;
+		}
+
+		if (memcmp(buf, test->expected_output, res) != 0) {
+			TEST_ERRMSG("output buffer contents mismatch.");
+			if (debug_hex) {
+				printf("expected:\n");
+				fprint_hex(stdout, (const unsigned char*)test->expected_output, strlen(test->expected_output), 32, "\n", 1);
+				printf("\ngot:\n");
+				fprint_hex(stdout, (const unsigned char*)buf, res, 32, "\n", 1);
+				printf("\n");
+			}
+		}
+	}
+
+	if (fails == 0) {
+		printf("Suite '%s' passed " GREEN "OK" NC "\n", testname);
+	}
+
+	return fails;
+}
+
 int main(int argc, char *argv[]) {
 	size_t failed = 0;
 
+	failed += test_expand_escapes();
 	failed += test_rep();
 	failed += test_cpy();
 

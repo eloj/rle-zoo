@@ -16,6 +16,8 @@
 #include "rle_goldbox.h"
 #define RLE_ZOO_PACKBITS_IMPLEMENTATION
 #include "rle_packbits.h"
+#define RLE_ZOO_PCX_IMPLEMENTATION
+#include "rle_pcx.h"
 
 // TODO: Variant selection code + tables can be shared.
 typedef size_t (*rle_fp)(const uint8_t *src, size_t slen, uint8_t *dest, size_t dlen);
@@ -34,6 +36,11 @@ struct rle_t {
 		.name = "packbits",
 		.compress = packbits_compress,
 		.decompress = packbits_decompress
+	},
+	{
+		.name = "pcx",
+		.compress = pcx_compress,
+		.decompress = pcx_decompress
 	},
 };
 

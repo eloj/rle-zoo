@@ -4,7 +4,7 @@ CWARNFLAGS=-Wstrict-prototypes -Wmissing-prototypes
 MISCFLAGS=-fstack-protector -fvisibility=hidden
 DEVFLAGS=-ggdb -DDEBUG -Wno-unused
 
-RLE_VARIANTS:=goldbox packbits
+RLE_VARIANTS:=goldbox packbits pcx
 RLE_VARIANT_HEADERS:=$(addprefix rle_, $(RLE_VARIANTS:=.h))
 RLE_VARIANT_OPS_HEADERS:=$(addprefix ops-, $(RLE_VARIANTS:=.h))
 
@@ -44,13 +44,13 @@ rle-zoo: rle-zoo.c $(RLE_VARIANT_HEADERS)
 rle-genops: rle-genops.c
 	$(CC) $(CFLAGS) $< $(filter %.o, $^) -o $@
 
-rle-parser: rle-parser.c $(RLE_VARIANT_OPS_HEADERS)
+rle-parser: rle-parser.c $(RLE_VARIANT_OPS_HEADERS) utility.h
 	$(CC) $(CFLAGS) $< $(filter %.o, $^) -o $@
 
-test_rle: test_rle.c $(RLE_VARIANT_HEADERS)
+test_rle: test_rle.c $(RLE_VARIANT_HEADERS) utility.h
 	$(CC) $(CFLAGS) $< $(filter %.o, $^) -o $@
 
-test_utility: test_utility.c
+test_utility: test_utility.c utility.h
 	$(CC) $(CFLAGS) $< $(filter %.o, $^) -o $@
 
 test: test_rle test_utility test_example

@@ -8,8 +8,12 @@
 		Take optional offset, length args
 		Take debug flag to output ops.
 		Log count + ratios of ops, and CPY->REP and REP->CPY transitions.
+			e.g PCX decode on packbits input; very obviously wrong because almost only LITs
 
 */
+#define UTILITY_IMPLEMENTATION
+#include "utility.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -23,6 +27,7 @@
 enum RLE_OP {
 	RLE_OP_CPY,
 	RLE_OP_REP,
+	RLE_OP_LIT,
 	RLE_OP_NOP,
 	RLE_OP_INVALID,
 };
@@ -34,34 +39,47 @@ struct rle8 {
 
 struct rle8_tbl {
 	const char *name;
+	enum RLE_OP op_used;
 	const size_t encode_tbl_len;
-	const int16_t *encode_tbl[2];
+	const int16_t *encode_tbl[3];
 	const struct rle8 *decode_tbl;
-	const size_t minmax_op[2][2];
+	const size_t minmax_op[3][2];
 };
 
 static const char *rle_op_cstr(enum RLE_OP op) {
 	const char *res = "UNKNOWN";
-	if (op == RLE_OP_CPY)
-		res = "CPY";
-	else if (op == RLE_OP_REP)
-		res = "REP";
-	else if (op == RLE_OP_NOP)
-		res = "NOP";
-	else if (op == RLE_OP_INVALID)
-		res = "INVALID";
+	switch (op) {
+		case RLE_OP_CPY:
+			res = "CPY";
+			break;
+		case RLE_OP_REP:
+			res = "REP";
+			break;
+		case RLE_OP_LIT:
+			res = "LIT";
+			break;
+		case RLE_OP_NOP:
+			res = "NOP";
+			break;
+		case RLE_OP_INVALID:
+			res = "INVALID";
+			break;
+	}
 	return res;
 }
 
 #include "ops-packbits.h"
 #include "ops-goldbox.h"
+#include "ops-pcx.h"
 
 static struct rle8_tbl* rle8_variants[] = {
 	&rle8_table_goldbox,
 	&rle8_table_packbits,
+	&rle8_table_pcx,
 };
 
-static int debugprint = 0;
+static int debug_print = 1;
+static int debug_hex = 1;
 
 // Count the number of repeated characters in the buffer `src` of length `len`, up to the maximum `max`.
 // The count is inclusive; for any non-zero length input there's at least one repeated character.
@@ -140,17 +158,30 @@ static int rle_parse_decode(struct rle8_tbl *rle, const uint8_t *data, size_t le
 		struct rle8 op = rle->decode_tbl[b];
 
 		if (op.op != RLE_OP_INVALID) {
-			if (debugprint)
-				printf("%08zx: <%02x> %s %d\n", rp, b, rle_op_cstr(op.op), op.cnt);
-			rp++;
+			if (debug_print)
+				printf("%08zx: <%02x> %s", rp, b, rle_op_cstr(op.op));
 			if (op.op == RLE_OP_CPY) {
-				rp += op.cnt;
+				if (debug_print) {
+					printf(" %d", op.cnt);
+					if (debug_hex) {
+						printf(" ; ");
+						fprint_hex(stdout, data + rp + 1, op.cnt, 0, NULL, 0);
+					}
+				}
+				rp += 1 + op.cnt;
 				wp += op.cnt;
 			} else if (op.op == RLE_OP_REP) {
-				rp += 1;
+				if (debug_print)
+					printf(" %02x * %d", data[rp+1], op.cnt);
+				rp += 2;
 				wp += op.cnt;
-			} else if (op.op == RLE_OP_NOP)
+			} else if (op.op == RLE_OP_LIT) {
 				rp += 1;
+				wp += 1;
+			} else if (op.op == RLE_OP_NOP) {
+				rp += 1;
+			}
+			printf("\n");
 		} else {
 			printf("%08zu: <%02x> %s\n", rp, b, rle_op_cstr(op.op));
 			return -2;
@@ -165,6 +196,10 @@ static int rle_parse_decode(struct rle8_tbl *rle, const uint8_t *data, size_t le
 	printf("Parse: rp=%zu, wp=%zu\n", rp, wp);
 	if (rp != len) {
 		return -1;
+	}
+	// HACKY: Expect at least half the input as output.
+	if (wp < len / 2) {
+		return -2;
 	}
 
 	return 0;
@@ -198,8 +233,11 @@ int main(int argc, char *argv []) {
 	}
 
 	struct rle8_tbl *rle = &rle8_table_packbits;
-	if (arg_encode) {
+	if (arg_encode == 1) {
 		rle_parse_encode(rle, buf, p_len);
+	} else if (arg_encode == 2) {
+		rle = &rle8_table_pcx;
+		rle_parse_decode(rle, buf, p_len);
 	} else {
 		for (size_t i = 0 ; i < sizeof(rle8_variants)/sizeof(rle8_variants[0]) ; ++i) {
 			rle = rle8_variants[i];

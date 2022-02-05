@@ -6,10 +6,15 @@
 */
 #define _GNU_SOURCE
 
+#define UTILITY_IMPLEMENTATION
+#include "utility.h"
+
 #define RLE_ZOO_GOLDBOX_IMPLEMENTATION
 #include "rle_goldbox.h"
 #define RLE_ZOO_PACKBITS_IMPLEMENTATION
 #include "rle_packbits.h"
+#define RLE_ZOO_PCX_IMPLEMENTATION
+#include "rle_pcx.h"
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -56,6 +61,11 @@ struct rle_t {
 		.compress = packbits_compress,
 		.decompress = packbits_decompress
 	},
+	{
+		.name = "pcx",
+		.compress = pcx_compress,
+		.decompress = pcx_decompress
+	},
 };
 
 static const size_t NUM_VARIANTS = sizeof(rle_variants)/sizeof(rle_variants[0]);
@@ -83,24 +93,6 @@ static uint32_t crc32c(uint32_t crc, const void *data, size_t len) {
 	return crc;
 }
 
-// TODO: Move to utility code.
-static void dprint_hex(int fd, const uint8_t *data, size_t len, int width, const char *indent, int show_offset) {
-	for (size_t i = 0 ; i < len ; ++i) {
-		if (show_offset && (i % width == 0)) dprintf(fd, "%08zx: ", i);
-		dprintf(fd, "%02x", data[i]);
-		if (i < len -1) {
-			if (indent && *indent && ((i+1) % width == 0)) {
-				dprintf(fd, "%s", indent);
-			} else {
-				dprintf(fd, " ");
-			}
-		}
-	}
-}
-
-static void fprint_hex(FILE *stream, const uint8_t *data, size_t len, int width, const char *indent, int show_offset) {
-	dprint_hex(fileno(stream), data, len, width, indent, show_offset);
-}
 
 #define TEST_ERRMSG(fmt, ...) \
 	fprintf(stderr, "%s:%zu:" RED " error: " NC fmt "\n", filename, line_no __VA_OPT__(,) __VA_ARGS__)
@@ -243,11 +235,18 @@ int main(int argc, char *argv[]) {
 						munmap(raw, raw_len);
 					}
 				} else if (input[0] == '"') {
-					// Strip quotes. TODO: Expand escape codes?
-					// NOTE: I intentionally reallocate the data, to give valgrind the best chance to detect OOB reads.
-					te.len = strlen(input + 1) - 1;
-					te.input = malloc(te.len);
-					memcpy(te.input, input + 1, te.len);
+					int err;
+					te.len = expand_escapes(input + 1, strlen(input + 1) - 1, NULL, 0, &err);
+					if (err == 0) {
+						// NOTE: I intentionally malloc the data, to give valgrind the best chance to detect OOB reads.
+						te.input = malloc(te.len);
+						te.len = expand_escapes(input + 1, strlen(input + 1) - 1, (char*)te.input, te.len, &err);
+						assert(err == 0);
+					} else {
+						TEST_WARNMSG("invalid escape sequence at position %zu, err %d\n", te.len, err);
+						goto nexttest;
+					}
+
 				} else {
 					TEST_WARNMSG("invalid input format");
 					goto nexttest;
