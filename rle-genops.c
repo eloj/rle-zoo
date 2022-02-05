@@ -179,7 +179,6 @@ static struct rle8 rle8_encode_pcx(struct rle8 cmd) {
 			res.cnt = cmd.cnt;
 		}
 	}
-	// TODO: any value >= 192 must be encoded as { REP 1 |+| value } -- can we deduce this?
 
 	return res;
 }

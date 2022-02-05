@@ -2,8 +2,6 @@
 	Run-Length Encoder/Decoder (RLE), PCX Variant
 	Copyright (c) 2022, Eddy L O Jansson. Licensed under The MIT License.
 
-	WORK IN PROGRESS -- NOT FULLY VERIFIED IMPLEMENTATION
-
 	See https://github.com/eloj/rle-zoo
 */
 #ifdef __cplusplus
@@ -18,7 +16,6 @@ size_t pcx_decompress(const uint8_t *src, size_t slen, uint8_t *dest, size_t dle
 
 #ifdef RLE_ZOO_PCX_IMPLEMENTATION
 #include <assert.h>
-#include <stdio.h> // TEMP
 
 size_t pcx_compress(const uint8_t *src, size_t slen, uint8_t *dest, size_t dlen) {
 	size_t rp = 0;
@@ -40,7 +37,8 @@ size_t pcx_compress(const uint8_t *src, size_t slen, uint8_t *dest, size_t dlen)
 			wp += 2;
 			rp += cnt;
 		} else {
-			// Output LIT. PERF: Again, this is probably suboptimal.
+			// Output LIT.
+			// PERF: Again, this is probably suboptimal, and also results in encoding runs of 2 LITs as REP, which differs from IM encoder.
 			if (dest && dlen > 0) {
 				dest[wp] = src[rp];
 			}

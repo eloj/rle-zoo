@@ -122,16 +122,40 @@ is bit-identitical to the original input.
 
 ### PCX
 
-TBD.
+The `PCX` variant comes from the _ZSoft IBM PC Paintbrush_ software and its associated [PCX image format](https://en.wikipedia.org/wiki/PCX).
+This image format was somewhat popular on the PC platform in the mid 1980s up to the early 1990s, but is now thoroughly obsolete.
+
+The only compression ever defined for this format is a simple RLE variant which uses two bits of a byte to encode
+REPs, and leaves the rest as literals.
 
 #### PCX Format
 
-TBD.
+* One OP byte encoding REP and `length`, or used as-is:
+	* 0x00 => LIT 0
+	* 0x01 => LIT 1
+	* ..
+	* 0xbd => LIT 189
+	* 0xbe => LIT 190
+	* 0xbf => LIT 191
+	* 0xc0 => REP 0
+	* 0xc1 => REP 1
+	* 0xc2 => REP 2
+	* ..
+	* 0xfe => REP 62
+	* 0xff => REP 63
+* REP: If the top two bits of OP are SET (equally; OP is >= 192), then the next byte is repeated `OP & 0x3F` times (0-63).
+* LIT: Any other byte value is used as-is (0-191).
+
+Obviously any single input byte larger than 191 MUST be encoded as a REP 1 -- expanding the output with one byte -- but an
+encoder COULD encode any value using REP 1. In addition, depending on how the encoder is structured, it may encode two repeated
+literals as-is, or as a REP 2. An encoder that scans for runs of literals will probably do the first, while one that output
+literals as they are seen will probably do the former.
+
+The existance of a `REP 0` operation is an inefficiency, and allows the encoder to encode data that is not included in the decoded output.
 
 ## TODO
 
 * Add functional conformance tests, e.g verify length determination.
-* Internal tools should share utility functions.
 * Add more animals. Potential candidates: Apple 'icns' Icons, BMP(?), TGA, ...
 * Add fuzzing (afl++).
 * Improve `rle-zoo` to behave more like a standard UNIX filter.
