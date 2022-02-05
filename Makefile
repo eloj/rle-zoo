@@ -44,13 +44,13 @@ rle-zoo: rle-zoo.c $(RLE_VARIANT_HEADERS)
 rle-genops: rle-genops.c
 	$(CC) $(CFLAGS) $< $(filter %.o, $^) -o $@
 
-rle-parser: rle-parser.c $(RLE_VARIANT_OPS_HEADERS)
+rle-parser: rle-parser.c $(RLE_VARIANT_OPS_HEADERS) utility.h
 	$(CC) $(CFLAGS) $< $(filter %.o, $^) -o $@
 
-test_rle: test_rle.c $(RLE_VARIANT_HEADERS)
+test_rle: test_rle.c $(RLE_VARIANT_HEADERS) utility.h
 	$(CC) $(CFLAGS) $< $(filter %.o, $^) -o $@
 
-test_utility: test_utility.c
+test_utility: test_utility.c utility.h
 	$(CC) $(CFLAGS) $< $(filter %.o, $^) -o $@
 
 test: test_rle test_utility test_example
