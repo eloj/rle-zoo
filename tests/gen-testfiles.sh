@@ -18,6 +18,7 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
 	rep 127 A >R127A
 	rep 128 A >R128A
 	rep 129 A >R129A
+	rep 128 `echo -e "\xFF"` >R128_FF
 
 	rep 64 Aa | cut -c -126 | tr -d '\n' > C126
 	rep 64 Aa | cut -c -127 | tr -d '\n' > C127
