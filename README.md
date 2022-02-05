@@ -155,8 +155,8 @@ The existance of a `REP 0` operation is an inefficiency, and allows the encoder 
 
 ## TODO
 
-* Add functional conformance tests, e.g verify length determination.
 * Add more animals. Potential candidates: Apple 'icns' Icons, BMP(?), TGA, ...
+* Add (optional) round-tripping to `rle_test`.
 * Add fuzzing (afl++).
 * Improve `rle-zoo` to behave more like a standard UNIX filter.
 

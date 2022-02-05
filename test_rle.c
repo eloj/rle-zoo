@@ -116,15 +116,41 @@ static int run_rle_test(struct rle_t *rle, struct test *te, const char *filename
 
 	char *action = te->actions;
 
+	// COMPRESS
 	if (*action == 'c') {
-		size_t res = rle->compress(te->input, te->len, tmp_buf, tmp_size);
-		if (res != te->expected_size) {
-			TEST_ERRMSG("expected compressed size %zu, got %zu.", te->expected_size, res);
+		// First do a length-determination check on the input.
+		size_t len_check = rle->compress(te->input, te->len, NULL, 0);
+		if (len_check != te->expected_size) {
+			TEST_ERRMSG("expected compressed size %zu, got %zu.", te->expected_size, len_check);
 			retval = 1;
 		}
+
+		// Next compress the input into the oversized buffer, and verify length remains the same.
+		assert(len_check <= tmp_size);
+		size_t res = rle->compress(te->input, te->len, tmp_buf, tmp_size);
+		if (res != len_check) {
+			TEST_ERRMSG("compressed output length differs from determined value %zu, got %zu.", len_check, res);
+			retval = 1;
+		}
+
 		uint32_t res_hash = crc32c((uint32_t)~0, tmp_buf, res) ^ (uint32_t)~0;
+
+		// Now decompress with the output byte-tight, to check for dest range-check errors.
+		size_t res_tight = rle->compress(te->input, te->len, tmp_buf, len_check);
+		if (res_tight != len_check) {
+			TEST_ERRMSG("compressed output length for tight buffer differs from determined value %zu, got %zu.", len_check, res_tight);
+			retval = 1;
+		}
+
+		uint32_t res_tight_hash = crc32c((uint32_t)~0, tmp_buf, res_tight) ^ (uint32_t)~0;
 		if (res_hash != te->expected_hash) {
 			TEST_ERRMSG("expected compressed hash 0x%08x, got 0x%08x.", te->expected_hash, res_hash);
+			retval = 1;
+		}
+
+		// Verify there's no content diff between the oversized output buffer and the tight one.
+		if (res_tight_hash != res_hash) {
+			TEST_ERRMSG("compressed hash mismatch; 0x%08x vs 0x%08x.", res_tight_hash, res_hash);
 			retval = 1;
 		}
 
@@ -132,15 +158,41 @@ static int run_rle_test(struct rle_t *rle, struct test *te, const char *filename
 			fprint_hex(stdout, tmp_buf, res, 32, "\n", hex_show_offset); printf("\n");
 		}
 	}
+	// DECOMPRESS
 	if (*action == 'd') {
-		size_t res = rle->decompress(te->input, te->len, tmp_buf, tmp_size);
-		if (res != te->expected_size) {
-			TEST_ERRMSG("expected decompressed size %zu, got %zu.", te->expected_size, res);
+		// First do a length-determination check on the input.
+		size_t len_check = rle->decompress(te->input, te->len, NULL, 0);
+		if (len_check != te->expected_size) {
+			TEST_ERRMSG("expected decompressed size %zu, got %zu.", te->expected_size, len_check);
 			retval = 1;
 		}
+
+		// Next decompress the input into the oversized buffer, and verify length remains the same.
+		assert(len_check <= tmp_size);
+		size_t res = rle->decompress(te->input, te->len, tmp_buf, tmp_size);
+		if (res != len_check) {
+			TEST_ERRMSG("decompressed output length differs from determined value %zu, got %zu.", len_check, res);
+			retval = 1;
+		}
+
 		uint32_t res_hash = crc32c((uint32_t)~0, tmp_buf, res) ^ (uint32_t)~0;
-		if (res_hash != te->expected_hash) {
+
+		// Now decompress with the output byte-tight, to check for dest range-check errors.
+		size_t res_tight = rle->decompress(te->input, te->len, tmp_buf, len_check);
+		if (res_tight != len_check) {
+			TEST_ERRMSG("decompressed output length for tight buffer differs from determined value %zu, got %zu.", len_check, res_tight);
+			retval = 1;
+		}
+
+		uint32_t res_tight_hash = crc32c((uint32_t)~0, tmp_buf, res_tight) ^ (uint32_t)~0;
+		if (res_tight_hash != te->expected_hash) {
 			TEST_ERRMSG("expected decompressed hash 0x%08x, got 0x%08x.", te->expected_hash, res_hash);
+			retval = 1;
+		}
+
+		// Verify there's no content diff between the oversized output buffer and the tight one.
+		if (res_tight_hash != res_hash) {
+			TEST_ERRMSG("decompressed hash mismatch; 0x%08x vs 0x%08x.", res_tight_hash, res_hash);
 			retval = 1;
 		}
 
