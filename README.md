@@ -3,7 +3,7 @@
 
 [![Build status](https://github.com/eloj/rle-zoo/workflows/build/badge.svg)](https://github.com/eloj/rle-zoo/actions/workflows/c-cpp.yml)
 
-A collection of Run-Length Encoders and Decoders, and associated tooling for exploring this space. So far there are only two animals in the zoo. It's a very small zoo.
+A collection of Run-Length Encoders and Decoders, and associated tooling for exploring this space. So far there are only three animals in the zoo. It's a very small zoo.
 
 * _WHILE THIS NOTE PERSISTS, I MAY FORCE PUSH TO MASTER_
 * The codecs are written foremost to be clear and easy to understand, not for speed.
