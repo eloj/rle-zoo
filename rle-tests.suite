@@ -63,6 +63,7 @@ packbits d @tests/packbits/R128A_C128_R128A.rle 384 0xcf8b3f17
 pcx c "A" 1 0xe16dcdee
 pcx c "AA" 2 0x61e0e57e
 pcx c "AB" 2 0xbd9444ea
+# Encoder's choice as to encode ABB as LIT 1 REP 2, or LIT 3
 pcx c "ABB" 3 0x8191d085
 pcx c "AABB" 4 0xeff38d61
 pcx c "ABBBB" 3 0xe85e81b7
@@ -77,4 +78,5 @@ pcx c @tests/R126A 4 0x12b30b1e
 pcx c @tests/R127A 5 0x5d5906ad
 pcx c @tests/R128_FF 6 0x7113a0bd
 
-# TODO: add decompression tests...
+# REP 0 can be used to hide things from the decoder
+pcx d "\xC0s\xC0e\xC0c\xC0r\xC0e\xC0tmessage" 7 0x98a214d0
