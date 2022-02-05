@@ -235,11 +235,18 @@ int main(int argc, char *argv[]) {
 						munmap(raw, raw_len);
 					}
 				} else if (input[0] == '"') {
-					// Strip quotes. TODO: Expand escape codes?
-					// NOTE: I intentionally reallocate the data, to give valgrind the best chance to detect OOB reads.
-					te.len = strlen(input + 1) - 1;
-					te.input = malloc(te.len);
-					memcpy(te.input, input + 1, te.len);
+					int err;
+					te.len = expand_escapes(input + 1, strlen(input + 1) - 1, NULL, 0, &err);
+					if (err == 0) {
+						// NOTE: I intentionally malloc the data, to give valgrind the best chance to detect OOB reads.
+						te.input = malloc(te.len);
+						te.len = expand_escapes(input + 1, strlen(input + 1) - 1, (char*)te.input, te.len, &err);
+						assert(err == 0);
+					} else {
+						TEST_WARNMSG("invalid escape sequence at position %zu, err %d\n", te.len, err);
+						goto nexttest;
+					}
+
 				} else {
 					TEST_WARNMSG("invalid input format");
 					goto nexttest;
