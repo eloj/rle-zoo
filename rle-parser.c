@@ -11,6 +11,9 @@
 			e.g PCX decode on packbits input; very obviously wrong because almost only LITs
 
 */
+#define UTILITY_IMPLEMENTATION
+#include "utility.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -77,21 +80,6 @@ static struct rle8_tbl* rle8_variants[] = {
 
 static int debug_print = 1;
 static int debug_hex = 1;
-
-// Copied from test_rle.c:
-static void print_hex(const uint8_t *data, size_t len, int width, const char *indent, int show_offset) {
-	for (size_t i = 0 ; i < len ; ++i) {
-		if (show_offset && (i % width == 0)) printf("%08zx: ", i);
-		printf("%02x", data[i]);
-		if (i < len -1) {
-			if (indent && *indent && ((i+1) % width == 0)) {
-				printf("%s", indent);
-			} else {
-				printf(" ");
-			}
-		}
-	}
-}
 
 // Count the number of repeated characters in the buffer `src` of length `len`, up to the maximum `max`.
 // The count is inclusive; for any non-zero length input there's at least one repeated character.
@@ -177,7 +165,7 @@ static int rle_parse_decode(struct rle8_tbl *rle, const uint8_t *data, size_t le
 					printf(" %d", op.cnt);
 					if (debug_hex) {
 						printf(" ; ");
-						print_hex(data + rp + 1, op.cnt, 0, NULL, 0);
+						fprint_hex(stdout, data + rp + 1, op.cnt, 0, NULL, 0);
 					}
 				}
 				rp += 1 + op.cnt;

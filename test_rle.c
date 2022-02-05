@@ -6,6 +6,9 @@
 */
 #define _GNU_SOURCE
 
+#define UTILITY_IMPLEMENTATION
+#include "utility.h"
+
 #define RLE_ZOO_GOLDBOX_IMPLEMENTATION
 #include "rle_goldbox.h"
 #define RLE_ZOO_PACKBITS_IMPLEMENTATION
@@ -90,24 +93,6 @@ static uint32_t crc32c(uint32_t crc, const void *data, size_t len) {
 	return crc;
 }
 
-// TODO: Move to utility code.
-static void dprint_hex(int fd, const uint8_t *data, size_t len, int width, const char *indent, int show_offset) {
-	for (size_t i = 0 ; i < len ; ++i) {
-		if (show_offset && (i % width == 0)) dprintf(fd, "%08zx: ", i);
-		dprintf(fd, "%02x", data[i]);
-		if (i < len -1) {
-			if (indent && *indent && ((i+1) % width == 0)) {
-				dprintf(fd, "%s", indent);
-			} else {
-				dprintf(fd, " ");
-			}
-		}
-	}
-}
-
-static void fprint_hex(FILE *stream, const uint8_t *data, size_t len, int width, const char *indent, int show_offset) {
-	dprint_hex(fileno(stream), data, len, width, indent, show_offset);
-}
 
 #define TEST_ERRMSG(fmt, ...) \
 	fprintf(stderr, "%s:%zu:" RED " error: " NC fmt "\n", filename, line_no __VA_OPT__(,) __VA_ARGS__)
