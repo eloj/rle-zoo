@@ -165,6 +165,7 @@ static int rle_parse_decode(struct rle8_tbl *rle, const uint8_t *data, size_t le
 					printf(" %d", op.cnt);
 					if (debug_hex) {
 						printf(" ; ");
+						fflush(stdout);
 						fprint_hex(stdout, data + rp + 1, op.cnt, 0, NULL, 0);
 					}
 				}
@@ -181,7 +182,8 @@ static int rle_parse_decode(struct rle8_tbl *rle, const uint8_t *data, size_t le
 			} else if (op.op == RLE_OP_NOP) {
 				rp += 1;
 			}
-			printf("\n");
+			if (debug_print)
+				printf("\n");
 		} else {
 			printf("%08zu: <%02x> %s\n", rp, b, rle_op_cstr(op.op));
 			return -2;
