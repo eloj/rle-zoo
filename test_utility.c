@@ -10,6 +10,7 @@
 #include <stddef.h>
 #include <string.h>
 #include <assert.h>
+#include <ctype.h>
 
 #define RED "\e[1;31m"
 #define GREEN "\e[0;32m"
@@ -17,6 +18,22 @@
 #define NC "\e[0m"
 
 static int debug = 0;
+static int debug_hex = 1;
+
+// Copied from test_rle.c:
+static void print_hex(const uint8_t *data, size_t len, int width, const char *indent, int show_offset) {
+	for (size_t i = 0 ; i < len ; ++i) {
+		if (show_offset && (i % width == 0)) printf("%08zx: ", i);
+		printf("%02x", data[i]);
+		if (i < len -1) {
+			if (indent && *indent && ((i+1) % width == 0)) {
+				printf("%s", indent);
+			} else {
+				printf(" ");
+			}
+		}
+	}
+}
 
 /*
 	A -> 1
@@ -206,9 +223,192 @@ static int test_cpy(void) {
 	return fails;
 }
 
+static uint8_t nibble(const char c) {
+	if (c >= '0' && c <= '9') {
+		return c - '0';
+	} else if (c >= 'a' && c <= 'f') {
+		return 10 + c - 'a';
+	} else if (c >= 'A' && c <= 'F') {
+		return 10 + c - 'A';
+	}
+	return 0;
+}
+
+enum escape_err {
+	NO_ERROR,
+	ESC_ERROR,
+	ESC_ERROR_CHAR,
+	ESC_ERROR_HEX,
+	ESC_ERROR_DEC,
+};
+
+// Expand escape codes. Not compatible with stdlib!
+//
+// Accepts:
+//  - Standard escapes: \r\n\t, etc.
+//  - Hexadecimal escapes: \x00 - \xFF
+//  - Decimal escapes: \0 - \255
+//  No support of octal.
+//
+// Returns
+//   If dest is NULL, then returns number of bytes that WOULD be written.
+//   On success:
+//   	Returns number of bytes written.
+//   On error:
+//   	Sets err, and returns position of error in input.
+static size_t expand_escapes(const char *input, size_t slen, char *dest, size_t dlen, int *err) {
+	size_t rp = 0;
+	size_t wp = 0;
+
+#define RETURN_ERR(err_enum) { if (err) *err = err_enum; return rp_start; } while (0)
+	assert(err != NULL);
+
+	while (rp < slen && (wp < dlen || dest == NULL)) {
+		// Use start of scan as return value on error.
+		size_t rp_start = rp;
+		char c = input[rp++];
+		if (c == '\\') {
+			// Check if dangling escape
+			if (rp >= slen)
+				RETURN_ERR(ESC_ERROR);
+
+			if (input[rp] == 'x') {
+				// HEX escape
+				if (rp + 2 < slen && isxdigit(input[rp+1]) && isxdigit(input[rp+2])) {
+					c = (nibble(input[rp+1]) << 4) | nibble(input[rp+2]);
+					rp += 3;
+				} else {
+					RETURN_ERR(ESC_ERROR_HEX);
+				}
+			} else if (isdigit(input[rp])) {
+				// DECimal escape
+				int decval = input[rp++] - '0';
+				if (rp < slen && isdigit(input[rp])) {
+					decval *= 10;
+					decval += input[rp++] - '0';
+				}
+				if (rp < slen && isdigit(input[rp])) {
+					decval *= 10;
+					decval += input[rp++] - '0';
+				}
+				if (decval > 255) {
+					RETURN_ERR(ESC_ERROR_DEC);
+				}
+				c = decval;
+			} else {
+				// Standard escape character
+				// We don't support \? because that is a trigraphs legacy.
+				switch (input[rp++]) {
+					case 'a': c = '\a'; break;
+					case 'b': c = '\b'; break;
+					case 'f': c = '\f'; break;
+					case 'n': c = '\n'; break;
+					case 'r': c = '\r'; break;
+					case 't': c = '\t'; break;
+					case 'v': c = '\v'; break;
+					case '"': c = '"';  break;
+					case '\\': c = '\\';break;
+					default:
+						RETURN_ERR(ESC_ERROR_CHAR);
+				}
+			}
+		}
+
+		if (dest && dlen) {
+			if (wp < dlen) {
+				dest[wp] = c;
+			}
+		}
+		++wp;
+	}
+	if (err)
+		*err = 0;
+	return wp;
+#undef RETURN_ERR
+}
+
+struct escape_test {
+	const char *input;
+	const char *expected_output;
+	size_t expected_len;
+	int expected_err;
+};
+
+static int test_expand_escapes(void) {
+	const char *testname = "expand_escapes";
+	size_t fails = 0;
+	char buf[1024];
+
+	struct escape_test tests[] = {
+		// Expected pass tests:
+		{ "", "", 0, 0 },
+		{ "A", "A", 1, 0 },
+		{ "\\xFF", "\xFF", 1, 0 },
+		{ "A\\x40A", "A@A", 3, 0 },
+		{ "\\0", "\0", 1, 0 },
+		{ "\\1\\32\\128", "\1\40\200", 3, 0 },
+		{ "\\\"", "\"", 1, 0 },
+		{ "\\a\\b\\f\\n\\r\\t\\v", "\a\b\f\n\r\t\v", 7, 0 },
+		// Expected error tests:
+		{ "\\", "", 0, ESC_ERROR },
+		{ "\\x", "", 0, ESC_ERROR_HEX },
+		{ "\\x8", "", 0, ESC_ERROR_HEX }, // NOTE: Should perhaps accept as extension?
+		{ "\\xfz", "", 0, ESC_ERROR_HEX },
+		{ "\\256", "", 0, ESC_ERROR_DEC },
+		{ "\\?", "", 0, ESC_ERROR_CHAR },
+	};
+
+	for (size_t i = 0 ; i < sizeof(tests)/sizeof(tests[0]) ; ++i) {
+		struct escape_test *test = &tests[i];
+		int err, err2;
+
+		size_t res_len = expand_escapes(test->input, strlen(test->input), NULL, 0, &err);
+		if (err != test->expected_err) {
+			TEST_ERRMSG("unexpected error, expected '%d', got '%d' (position %zu).", test->expected_err, err, res_len);
+			++fails;
+			continue;
+		}
+		if (test->expected_err != 0) {
+			// Expected error -- we're done here.
+			continue;
+		}
+
+		if (res_len != test->expected_len) {
+			TEST_ERRMSG("length-determination result mismatch, expected '%zu', got '%zu'.", test->expected_len, res_len);
+			++fails;
+			continue;
+		}
+
+		size_t res = expand_escapes(test->input, strlen(test->input), buf, sizeof(buf), &err);
+		if (res != res_len) {
+			TEST_ERRMSG("output length differs, expected '%zu', got '%zu'.", res_len, res);
+			++fails;
+			continue;
+		}
+
+		if (memcmp(buf, test->expected_output, res) != 0) {
+			TEST_ERRMSG("output buffer contents mismatch.");
+			if (debug_hex) {
+				printf("expected:\n");
+				print_hex((const unsigned char*)test->expected_output, strlen(test->expected_output), 32, "\n", 1);
+				printf("\ngot:\n");
+				print_hex((const unsigned char*)buf, res, 32, "\n", 1);
+				printf("\n");
+			}
+		}
+	}
+
+	if (fails == 0) {
+		printf("Suite '%s' passed " GREEN "OK" NC "\n", testname);
+	}
+
+	return fails;
+}
+
 int main(int argc, char *argv[]) {
 	size_t failed = 0;
 
+	failed += test_expand_escapes();
 	failed += test_rep();
 	failed += test_cpy();
 
