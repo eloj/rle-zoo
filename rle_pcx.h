@@ -55,25 +55,19 @@ size_t pcx_decompress(const uint8_t *src, size_t slen, uint8_t *dest, size_t dle
 	const uint8_t *send = src + slen;
 	size_t wp = 0;
 	while (src < send && (wp < dlen || dest == NULL)) {
-		uint8_t cnt;
+		uint8_t cnt = 1;
 		uint8_t b = *src++;
 
 		// REP
 		if ((b & 0xC0) == 0xC0) {
 			cnt = b & 0x3F;
-			if (dest && dlen > 0 && src < send) {
-				for (int i = 0 ; i < cnt && wp + i < dlen ; ++i)
-					dest[wp + i] = *src;
-			}
-			++src;
-			wp += cnt;
-		} else {
-			// PERF: This is very inefficient. Scan input for repeated literals instead.
-			if (dest && dlen > 0) {
-				dest[wp] = b;
-			}
-			++wp;
+			b = (src < send) ? *src++ : 0; // Guard from OOB read
 		}
+		if (dest) {
+			for (int i = 0 ; i < cnt && wp + i < dlen ; ++i)
+				dest[wp + i] = b;
+		}
+		wp += cnt;
 	}
 	assert(src == send);
 	assert((dest == NULL) || (wp <= dlen));
