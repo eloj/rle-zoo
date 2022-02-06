@@ -12,27 +12,29 @@
 #include "rle_packbits.h"
 
 int main(void) {
-	const uint8_t input[] = "ABBBBA";
+	const uint8_t input[] = "ABBCCCDDDDEEEEE";
 	size_t len = sizeof(input) - 1;
 
-	// Call with NULL for dest buffer and size to calculate output size.
-	size_t compressed_size = packbits_compress(input, len, NULL, 0);
+	// Call with NULL for dest buffer to calculate output size.
+	ssize_t compressed_size = packbits_compress(input, len, NULL, 0);
 
 	if (compressed_size > 0) {
 		uint8_t *output = malloc(compressed_size);
 		if (output) {
-			packbits_compress(input, len, output, compressed_size);
-			printf("Compressed '%s' into %zu bytes: ", input, compressed_size);
+			ssize_t res = packbits_compress(input, len, output, compressed_size);
+			if (res > 0) {
+				printf("Compressed '%s' (%zu bytes) into %zd bytes: ", input, len, compressed_size);
 
-			// Do something with the output.
-			for (size_t i = 0 ; i < compressed_size ; ++i) {
-				printf("%02X ", output[i]);
+				// Do something with the output.
+				for (int i = 0 ; i < res ; ++i) {
+					printf("%02X ", output[i]);
+				}
+				printf("\n");
+			} else {
+				printf("Compression error: %zd\n", res);
 			}
-			printf("\n");
-
 			free(output);
 		}
 	}
-
 	return 0;
 }

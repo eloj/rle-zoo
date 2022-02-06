@@ -53,6 +53,8 @@ test_rle: test_rle.c $(RLE_VARIANT_HEADERS) utility.h
 test_utility: test_utility.c utility.h
 	$(CC) $(CFLAGS) $< $(filter %.o, $^) -o $@
 
+test_example: rle_packbits.h
+
 test: test_rle test_utility test_example
 	$(TEST_PREFIX) ./test_utility
 	$(TEST_PREFIX) ./test_rle
