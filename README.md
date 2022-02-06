@@ -6,7 +6,7 @@
 A collection of Run-Length Encoders and Decoders, and associated tooling for exploring this space. So far there are only three animals in the zoo. It's a very small zoo.
 
 * _WHILE THIS NOTE PERSISTS, I MAY FORCE PUSH TO MASTER_
-* The codecs are written foremost to be clear and easy to understand, not for speed.
+* The codecs are written foremost to be robust, correct, and clear and easy to understand, not for performance.
 * I'm mostly interested in exploring legacy formats.
 
 ## What is Run-Length Encoding?
@@ -29,8 +29,8 @@ int main(void) {
 	const uint8_t input[] = "ABBBBA";
 	size_t len = sizeof(input) - 1;
 
-	// Call with NULL for dest buffer and size to calculate output size.
-	size_t expected_size = packbits_compress(input, len, NULL, 0);
+	// Call with NULL for dest buffer to calculate output size.
+	ssize_t expected_size = packbits_compress(input, len, NULL, 0);
 	...
 ```
 
@@ -56,7 +56,7 @@ Currently the following extraordinary specimens are grazing the fertile grounds 
 
 ### PackBits
 
-The `packbits` variant reportedly originates from the Apple Macintosh[^fnTN1023], but spread far and wide from there, including
+The `packbits` variant reportedly originates from the Apple Macintosh[^foottn1023], but spread far and wide from there, including
 into Electronic Arts IFF ILBM (unverified).
 
 #### PackBits Format
@@ -80,7 +80,7 @@ into Electronic Arts IFF ILBM (unverified).
 The encoder should not generate 0x80, which is reserved. The technical note from Apple states that a decoder should
 "_[handle] this situation by skipping any flag-counter byte with this value and interpreting the next byte as the next flag-counter byte._"
 
-[^fnTN1023]: "Understanding PackBits", Apple [Technical Note TN1023](http://web.archive.org/web/20080705155158/http://developer.apple.com/technotes/tn/tn1023.html).
+[^foottn1023]: "Understanding PackBits", Apple [Technical Note TN1023](http://web.archive.org/web/20080705155158/http://developer.apple.com/technotes/tn/tn1023.html).
 
 ### Goldbox
 
@@ -155,7 +155,6 @@ The existance of a `REP 0` operation is an inefficiency, and allows the encoder 
 
 ## TODO
 
-* Improve handling of invalid input (return error value?), e.g REP/CPY OP as last input byte.
 * Add more animals. Potential candidates: Apple 'icns' Icons, BMP(?), TGA, ...
 * Add fuzzing (afl++).
 * Improve `rle-zoo` to behave more like a standard UNIX filter.
