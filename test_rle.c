@@ -34,6 +34,9 @@
 static int debug = 1; // Output debug hex dumps for failed tests.
 static int hex_always = 0;
 static int hex_show_offset = 1;
+static int flag_roundtrip = 1;
+
+static int num_roundtrip = 0;
 
 struct test {
 	uint8_t *input;
@@ -99,6 +102,35 @@ static uint32_t crc32c(uint32_t crc, const void *data, size_t len) {
 #define TEST_WARNMSG(fmt, ...) \
 	fprintf(stderr, "%s:%zu:" YELLOW " warning: " NC fmt "\n", filename, line_no __VA_OPT__(,) __VA_ARGS__)
 
+// This either compress or decompress the output of a test to check it against the original input.
+static int roundtrip(struct rle_t *rle, struct test *te, uint8_t *inbuf, size_t inbuf_len, int compress) {
+	rle_fp rle_func = compress ? rle->compress : rle->decompress;
+
+	uint8_t *tmp_buf = malloc(te->len);
+
+	size_t res = rle_func(inbuf, inbuf_len, tmp_buf, te->len);
+
+	int cmp = memcmp(tmp_buf, te->input, te->len);
+	if (cmp != 0) {
+		printf("expected from %scompressed test input:\n", compress ? "" : "de");
+		fprint_hex(stdout, te->input, te->len, 32, "\n", hex_show_offset);
+		fflush(stdout);
+		printf("\n");
+		printf("got:\n");
+		fprint_hex(stdout, tmp_buf, res, 32, "\n", hex_show_offset);
+		fflush(stdout);
+		printf("\n");
+	} else {
+		cmp = res != te->len;
+	}
+
+	free(tmp_buf);
+
+	++num_roundtrip;
+
+	return cmp;
+}
+
 static int run_rle_test(struct rle_t *rle, struct test *te, const char *filename, size_t line_no) {
 	// printf("INPUT:%.*s (%zu bytes)\n", (int)te->len, te->input, te->len);
 
@@ -115,6 +147,7 @@ static int run_rle_test(struct rle_t *rle, struct test *te, const char *filename
 	int retval = 0;
 
 	char *action = te->actions;
+	int no_roundtrip = strchr(action, '-') != NULL;
 
 	// COMPRESS
 	if (*action == 'c') {
@@ -154,8 +187,14 @@ static int run_rle_test(struct rle_t *rle, struct test *te, const char *filename
 			retval = 1;
 		}
 
+		if (flag_roundtrip && !no_roundtrip && roundtrip(rle, te, tmp_buf, te->expected_size, 0) != 0) {
+			TEST_ERRMSG("re-decompressed data does not match original input!");
+			retval = 1;
+		}
+
 		if ((debug && retval != 0) || hex_always) {
 			fprint_hex(stdout, tmp_buf, res, 32, "\n", hex_show_offset); printf("\n");
+			fflush(stdout);
 		}
 	}
 	// DECOMPRESS
@@ -196,8 +235,14 @@ static int run_rle_test(struct rle_t *rle, struct test *te, const char *filename
 			retval = 1;
 		}
 
+		if (flag_roundtrip && !no_roundtrip && roundtrip(rle, te, tmp_buf, te->expected_size, 1) != 0) {
+			TEST_ERRMSG("re-compressed data does not match original input!");
+			retval = 1;
+		}
+
 		if ((debug && retval != 0) || hex_always) {
 			fprint_hex(stdout, tmp_buf, res, 32, "\n", hex_show_offset); printf("\n");
+			fflush(stdout);
 		}
 	}
 
@@ -250,6 +295,10 @@ int main(int argc, char *argv[]) {
 		++line_no;
 		if (line_len < 3 || line[0] == '#' || line[0] == ';') {
 			continue;
+		}
+		if (strncmp(line, "---", 3) == 0) {
+			TEST_WARNMSG("end-marker hit");
+			break;
 		}
 		// Parse input line
 		// goldbox c "AAAAAAAAAAAAAAAA" 2 0xhash
@@ -320,8 +369,12 @@ nexttest:
 	free(line);
 	fclose(f);
 
+	if (flag_roundtrip == 0) {
+		printf(YELLOW "Warning: Roundtripping disabled -- test coverage decreased!" NC "\n");
+	}
+
 	if (failed_tests == 0) {
-		printf(GREEN "All tests of '%s' passed." NC "\n", filename);
+		printf(GREEN "All tests of '%s' passed. (incl. %d roundtrip checks)" NC "\n", filename, num_roundtrip);
 	} else {
 		fprintf(stderr, RED "%zu test failures in suite '%s'." NC "\n", failed_tests, filename);
 		exit(1);
