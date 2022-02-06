@@ -155,6 +155,7 @@ The existance of a `REP 0` operation is an inefficiency, and allows the encoder 
 
 ## TODO
 
+* Improve handling of invalid input (return error value?), e.g REP/CPY OP as last input byte.
 * Add more animals. Potential candidates: Apple 'icns' Icons, BMP(?), TGA, ...
 * Add fuzzing (afl++).
 * Improve `rle-zoo` to behave more like a standard UNIX filter.
