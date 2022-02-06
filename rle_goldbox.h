@@ -29,8 +29,9 @@ ssize_t goldbox_compress(const uint8_t *src, size_t slen, uint8_t *dest, size_t 
 		uint8_t cnt = 0;
 
 		// Count number of same bytes, up to 126
-		while ((rp+cnt+1 < slen) && (src[rp+cnt] == src[rp+cnt+1]) && (cnt < 126))
+		while ((rp+cnt+1 < slen) && (src[rp+cnt] == src[rp+cnt+1]) && (cnt < 126)) {
 			++cnt;
+		}
 
 		// Output REP. Also encode the last characters as a REP, even if it's just one.
 		if (cnt > 0 || (rp+cnt+1 == slen)) {
@@ -49,8 +50,9 @@ ssize_t goldbox_compress(const uint8_t *src, size_t slen, uint8_t *dest, size_t 
 		}
 
 		cnt = 0;
-		while ((rp+cnt+1 < slen) && (src[rp+cnt] != src[rp+cnt+1]) && (cnt < 126)) // Accepting more makes us incompatible with PoR
+		while ((rp+cnt+1 < slen) && (src[rp+cnt] != src[rp+cnt+1]) && (cnt < 126)) { // Accepting more makes us incompatible with PoR
 			++cnt;
+		}
 
 		assert(cnt > 0);
 		assert(rp + cnt <= slen);

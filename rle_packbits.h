@@ -25,13 +25,7 @@ ssize_t packbits_compress(const uint8_t *src, size_t slen, uint8_t *dest, size_t
 
 	while (rp < slen) {
 		uint8_t cnt = 0;
-
-		// TODO: Replace with do-while...
-		// Count number of same bytes, up to 128
-		while ((rp+cnt+1 < slen) && (src[rp+cnt] == src[rp+cnt+1]) && (cnt < 127)) {
-			++cnt;
-		}
-		++cnt;
+		do { ++cnt; } while ((rp + cnt + 1 <= rp + slen) && (cnt < 128) && (src[rp + cnt-1] == src[rp + cnt]));
 
 		// Output REP.
 		if (cnt > 1) {
@@ -51,8 +45,9 @@ ssize_t packbits_compress(const uint8_t *src, size_t slen, uint8_t *dest, size_t
 
 		cnt = 0;
 		// Count number of literal bytes, up to 128.
-		while ((rp+cnt+1 <= slen) && (cnt < 128) && ((rp+cnt+1 == slen) || (src[rp+cnt] != src[rp+cnt+1])))
+		while ((rp+cnt+1 <= slen) && (cnt < 128) && ((rp+cnt+1 == slen) || (src[rp+cnt] != src[rp+cnt+1]))) {
 			++cnt;
+		 }
 
 		assert(cnt > 0);
 		assert(cnt <= 128);
