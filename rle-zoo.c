@@ -20,7 +20,7 @@
 #include "rle_pcx.h"
 
 // TODO: Variant selection code + tables can be shared.
-typedef size_t (*rle_fp)(const uint8_t *src, size_t slen, uint8_t *dest, size_t dlen);
+typedef ssize_t (*rle_fp)(const uint8_t *src, size_t slen, uint8_t *dest, size_t dlen);
 
 struct rle_t {
 	const char *name;
@@ -114,14 +114,16 @@ static void rle_compress_file(const char *srcfile, const char *destfile, rle_fp 
 			err(1, "fread: %s", srcfile);
 		}
 
-		size_t clen = compress_func(src, slen, NULL, 0);
-		if (clen > 0) {
+		ssize_t clen = compress_func(src, slen, NULL, 0);
+		if (clen >= 0) {
 			uint8_t *dest = malloc(clen);
 			clen = compress_func(src, slen, dest, clen);
 
 			fwrite(dest, clen, 1, ofile);
 
 			printf("%zd bytes written to output.\n", clen);
+		} else {
+			printf("Compression error: %zd\n", clen);
 		}
 
 		fclose(ofile);
@@ -155,14 +157,16 @@ static void rle_decompress_file(const char *srcfile, const char *destfile, rle_f
 				err(1, "fread: %s", srcfile);
 			}
 
-			size_t dlen = decompress_func(src, slen, NULL, 0);
-			if (dlen > 0) {
+			ssize_t dlen = decompress_func(src, slen, NULL, 0);
+			if (dlen >= 0) {
 				uint8_t *dest = malloc(dlen);
 				dlen = decompress_func(src, slen, dest, dlen);
 
 				fwrite(dest, dlen, 1, ofile);
 
 				printf("%zd bytes written to output.\n", dlen);
+			} else {
+				printf("Decompression error: %zd\n", dlen);
 			}
 
 			fclose(ofile);
