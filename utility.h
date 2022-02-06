@@ -6,7 +6,6 @@
 
 	TODO: Move into a separate repo, copy tests from test_utility.c
 */
-#define _GNU_SOURCE
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -15,7 +14,6 @@ extern "C" {
 #include <stddef.h>
 #include <stdio.h>
 
-void dprint_hex(int fd, const uint8_t *data, size_t len, int width, const char *indent, int show_offset);
 void fprint_hex(FILE *stream, const uint8_t *data, size_t len, int width, const char *indent, int show_offset);
 
 size_t expand_escapes(const char *input, size_t slen, char *dest, size_t dlen, int *err);
@@ -23,22 +21,19 @@ size_t expand_escapes(const char *input, size_t slen, char *dest, size_t dlen, i
 #ifdef UTILITY_IMPLEMENTATION
 #include <assert.h>
 #include <ctype.h> // for isxdigit()
-void dprint_hex(int fd, const uint8_t *data, size_t len, int width, const char *indent, int show_offset) {
+
+void fprint_hex(FILE *f, const uint8_t *data, size_t len, int width, const char *indent, int show_offset) {
 	for (size_t i = 0 ; i < len ; ++i) {
-		if (show_offset && (i % width == 0)) dprintf(fd, "%08zx: ", i);
-		dprintf(fd, "%02x", data[i]);
+		if (show_offset && (i % width == 0)) fprintf(f, "%08zx: ", i);
+		fprintf(f, "%02x", data[i]);
 		if (i < len -1) {
 			if (indent && *indent && ((i+1) % width == 0)) {
-				dprintf(fd, "%s", indent);
+				fprintf(f, "%s", indent);
 			} else {
-				dprintf(fd, " ");
+				fprintf(f, " ");
 			}
 		}
 	}
-}
-
-void fprint_hex(FILE *stream, const uint8_t *data, size_t len, int width, const char *indent, int show_offset) {
-	dprint_hex(fileno(stream), data, len, width, indent, show_offset);
 }
 
 static uint8_t nibble(const char c) {
