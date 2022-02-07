@@ -85,10 +85,13 @@ pcx c @tests/R128_FF 6 0x7113a0bd
 pcx d- "\xC0s\xC0e\xC0c\xC0r\xC0e\xC0tmessage" 7 0x98a214d0
 
 ## Invalid input examples:
-## REP 2 at end
+## REP /wo arg at end
 goldbox d "\xfe" -2
 packbits d "\xff" -2
 pcx d "\xc2" -2
-## CPY 2 at end
+## CPY /wo all data at end
 goldbox d "\x01" -2
+goldbox d "\x01A" -2
 packbits d "\x01" -2
+packbits d "\x01A" -2
+packbits d "\xffA\x04abcd" -4
