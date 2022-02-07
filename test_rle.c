@@ -132,8 +132,6 @@ static int roundtrip(struct rle_t *rle, struct test *te, uint8_t *inbuf, size_t 
 }
 
 static int run_rle_test(struct rle_t *rle, struct test *te, const char *filename, size_t line_no) {
-	// printf("INPUT:%.*s (%zu bytes)\n", (int)te->len, te->input, te->len);
-
 	// Take the max of the input and expected sizes as base estimate for temporary buffer.
 	size_t tmp_size = te->len;
 	if (te->expected_size > (ssize_t)tmp_size)
@@ -141,8 +139,6 @@ static int run_rle_test(struct rle_t *rle, struct test *te, const char *filename
 	tmp_size *= 4;
 	assert(tmp_size < 1L << 24);
 	uint8_t *tmp_buf = malloc(tmp_size);
-
-	uint32_t input_hash = crc32c((uint32_t)~0, te->input, te->len) ^ (uint32_t)~0;
 
 	int retval = 0;
 

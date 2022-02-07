@@ -243,7 +243,7 @@ static int test_expand_escapes(void) {
 
 	for (size_t i = 0 ; i < sizeof(tests)/sizeof(tests[0]) ; ++i) {
 		struct escape_test *test = &tests[i];
-		int err, err2;
+		int err;
 
 		size_t res_len = expand_escapes(test->input, strlen(test->input), NULL, 0, &err);
 		if (err != test->expected_err) {
@@ -288,7 +288,7 @@ static int test_expand_escapes(void) {
 	return fails;
 }
 
-int main(int argc, char *argv[]) {
+int main(void) {
 	size_t failed = 0;
 
 	failed += test_expand_escapes();

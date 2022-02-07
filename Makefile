@@ -54,7 +54,8 @@ test_rle: test_rle.c $(RLE_VARIANT_HEADERS) utility.h
 test_utility: test_utility.c utility.h
 	$(CC) $(CFLAGS) $< $(filter %.o, $^) -o $@
 
-test_example: rle_packbits.h
+test_example: test_example.c rle_packbits.h
+	$(CC) $(CFLAGS) $< $(filter %.o, $^) -o $@
 
 test_includeall: test_includeall.c $(RLE_VARIANT_HEADERS)
 	$(CC) $(CFLAGS) $(STRICT_FLAGS) test_includeall.c -o $@
