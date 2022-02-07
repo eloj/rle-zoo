@@ -123,10 +123,12 @@ is bit-identitical to the original input.
 ### PCX
 
 The `PCX` variant comes from the _ZSoft IBM PC Paintbrush_ software and its associated [PCX image format](https://en.wikipedia.org/wiki/PCX).
-This image format was somewhat popular on the PC platform in the mid 1980s up to the early 1990s, but is now thoroughly obsolete.
+This image format was popular on the PC platform in the mid-1980s and well into the 1990s[^footpcxmame], but is now thoroughly obsolete.
 
 The only compression ever defined for this format is a simple RLE variant which uses two bits of a byte to encode
 REPs, and leaves the rest as literals.
+
+[^footpcxmame]: The MAME project was using PCX up till May 1999; "Switched to PNG from PCX as the main screenshot image format", [Project Milestones](https://www.mamedev.org/history.html)
 
 #### PCX Format
 
