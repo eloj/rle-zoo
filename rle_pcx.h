@@ -18,7 +18,7 @@ ssize_t pcx_decompress(const uint8_t *src, size_t slen, uint8_t *dest, size_t dl
 #ifdef RLE_ZOO_PCX_IMPLEMENTATION
 #include <assert.h>
 
-static_assert(sizeof(size_t) == sizeof(ssize_t));
+static_assert(sizeof(size_t) == sizeof(ssize_t), "");
 
 // return -(rp + 1) ... mask so it can't flip positive. Give up and just always return -1?
 #define RLE_ZOO_RETURN_ERR return ~(rp & ((size_t)~0 >> 1UL))
