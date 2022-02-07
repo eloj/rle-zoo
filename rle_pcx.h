@@ -18,13 +18,19 @@ ssize_t pcx_decompress(const uint8_t *src, size_t slen, uint8_t *dest, size_t dl
 #ifdef RLE_ZOO_PCX_IMPLEMENTATION
 #include <assert.h>
 
-#define RLE_ZOO_RETURN_ERR return ~rp
+static_assert(sizeof(size_t) == sizeof(ssize_t), "");
+
+// return -(rp + 1) ... mask so it can't flip positive. Give up and just always return -1?
+#define RLE_ZOO_RETURN_ERR return ~(rp & ((size_t)~0 >> 1UL))
 
 ssize_t pcx_compress(const uint8_t *src, size_t slen, uint8_t *dest, size_t dlen) {
 	size_t rp = 0;
 	size_t wp = 0;
 
 	while (rp < slen) {
+		assert((ssize_t)wp >= 0);
+		assert((ssize_t)rp >= 0);
+
 		size_t cnt = 0;
 		// size_t cnt = rle_count_rep(src + rp, slen - rp, 63);
 		do { ++cnt; } while ((rp + cnt < slen) && (cnt < 63) && (src[rp + cnt - 1] == src[rp + cnt]));
@@ -34,7 +40,7 @@ ssize_t pcx_compress(const uint8_t *src, size_t slen, uint8_t *dest, size_t dlen
 			assert(cnt <= 63);
 			if (dest) {
 				if (wp + 1 < dlen) {
-					dest[wp+0] = 0xC0 | cnt;
+					dest[wp+0] = (uint8_t)(0xC0 | cnt);
 					dest[wp+1] = src[rp];
 				} else {
 					RLE_ZOO_RETURN_ERR;
@@ -58,13 +64,16 @@ ssize_t pcx_compress(const uint8_t *src, size_t slen, uint8_t *dest, size_t dlen
 	}
 	assert(rp == slen);
 	assert((dest == NULL) || (wp <= dlen));
-	return wp;
+	return (ssize_t)wp;
 }
 
 ssize_t pcx_decompress(const uint8_t *src, size_t slen, uint8_t *dest, size_t dlen) {
 	size_t wp = 0;
 	size_t rp = 0;
 	while (rp < slen) {
+		assert((ssize_t)wp >= 0);
+		assert((ssize_t)rp >= 0);
+
 		uint8_t cnt = 1;
 		uint8_t b = src[rp++];
 
@@ -78,7 +87,7 @@ ssize_t pcx_decompress(const uint8_t *src, size_t slen, uint8_t *dest, size_t dl
 		}
 		if (dest) {
 			if (wp + cnt <= dlen) {
-				for (int i = 0 ; i < cnt ; ++i)
+				for (unsigned int i = 0 ; i < cnt ; ++i)
 					dest[wp + i] = b;
 			} else {
 				RLE_ZOO_RETURN_ERR;
@@ -88,7 +97,7 @@ ssize_t pcx_decompress(const uint8_t *src, size_t slen, uint8_t *dest, size_t dl
 	}
 	assert(rp == slen);
 	assert((dest == NULL) || (wp <= dlen));
-	return wp;
+	return (ssize_t)wp;
 }
 #undef RLE_ZOO_RETURN_ERR
 #endif

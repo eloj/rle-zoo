@@ -3,6 +3,7 @@ WARNFLAGS=-Wall -Wextra -Wshadow -Wstrict-aliasing -Wcast-qual -Wcast-align -Wpo
 CWARNFLAGS=-Wstrict-prototypes -Wmissing-prototypes
 MISCFLAGS=-fstack-protector -fvisibility=hidden
 DEVFLAGS=-ggdb -DDEBUG -Wno-unused
+STRICT_FLAGS=-Werror -Wconversion
 
 RLE_VARIANTS:=goldbox packbits pcx
 RLE_VARIANT_HEADERS:=$(addprefix rle_, $(RLE_VARIANTS:=.h))
@@ -55,6 +56,9 @@ test_utility: test_utility.c utility.h
 
 test_example: rle_packbits.h
 
+test_includeall: test_includeall.c $(RLE_VARIANT_HEADERS)
+	$(CC) $(CFLAGS) $(STRICT_FLAGS) test_includeall.c
+
 test: test_rle test_utility test_example
 	$(TEST_PREFIX) ./test_utility
 	$(TEST_PREFIX) ./test_rle
@@ -71,4 +75,4 @@ backup:
 
 clean:
 	@echo -e $(YELLOW)Cleaning$(NC)
-	rm -f rle-zoo rle-genops rle-parser test_rle test_utility test_example $(RLE_VARIANT_OPS_HEADERS) vgcore.* core.* *.gcda
+	rm -f rle-zoo rle-genops rle-parser test_rle test_utility test_example test_includeall $(RLE_VARIANT_OPS_HEADERS) vgcore.* core.* *.gcda
