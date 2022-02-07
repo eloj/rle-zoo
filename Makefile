@@ -59,7 +59,7 @@ test_example: rle_packbits.h
 test_includeall: test_includeall.c $(RLE_VARIANT_HEADERS)
 	$(CC) $(CFLAGS) $(STRICT_FLAGS) test_includeall.c
 
-test: test_rle test_utility test_example test_includeall
+test: test_rle test_utility test_example
 	$(TEST_PREFIX) ./test_utility
 	$(TEST_PREFIX) ./test_rle
 
