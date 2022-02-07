@@ -18,6 +18,8 @@ ssize_t packbits_decompress(const uint8_t *src, size_t slen, uint8_t *dest, size
 #ifdef RLE_ZOO_PACKBITS_IMPLEMENTATION
 #include <assert.h>
 
+#define RLE_ZOO_RETURN_ERR return ~rp
+
 // RLE PARAMS: min CPY=1, max CPY=128, min REP=2, max REP=128
 ssize_t packbits_compress(const uint8_t *src, size_t slen, uint8_t *dest, size_t dlen) {
 	size_t rp = 0;
@@ -35,7 +37,7 @@ ssize_t packbits_compress(const uint8_t *src, size_t slen, uint8_t *dest, size_t
 					dest[wp+0] = 257 - cnt;
 					dest[wp+1] = src[rp];
 				} else {
-					return -(rp+1); // Destination buffer too small
+					RLE_ZOO_RETURN_ERR;
 				}
 			}
 			wp += 2;
@@ -47,7 +49,7 @@ ssize_t packbits_compress(const uint8_t *src, size_t slen, uint8_t *dest, size_t
 		// Count number of literal bytes, up to 128.
 		while ((rp+cnt+1 <= slen) && (cnt < 128) && ((rp+cnt+1 == slen) || (src[rp+cnt] != src[rp+cnt+1]))) {
 			++cnt;
-		 }
+		}
 
 		assert(cnt > 0);
 		assert(cnt <= 128);
@@ -60,7 +62,7 @@ ssize_t packbits_compress(const uint8_t *src, size_t slen, uint8_t *dest, size_t
 				for (int i = 0 ; i < cnt ; ++i)
 					dest[wp + 1 + i] = src[rp + i];
 			} else {
-				return -(rp+1);
+				RLE_ZOO_RETURN_ERR;
 			}
 		}
 		rp += cnt;
@@ -81,14 +83,14 @@ ssize_t packbits_decompress(const uint8_t *src, size_t slen, uint8_t *dest, size
 			// REP
 			cnt = 257 - b;
 			if (!(rp < slen)) {
-				return -(rp +1);
+				RLE_ZOO_RETURN_ERR;
 			}
 			if (dest) {
 				if (wp + cnt <= dlen) {
 					for (int i = 0 ; i < cnt ; ++i)
 						dest[wp + i] = src[rp];
 				} else {
-					return -(rp + 1);
+					RLE_ZOO_RETURN_ERR;
 				}
 			}
 			++rp;
@@ -96,27 +98,25 @@ ssize_t packbits_decompress(const uint8_t *src, size_t slen, uint8_t *dest, size
 			// CPY
 			cnt = b + 1;
 			if (!(rp + cnt <= slen)) {
-				return -(rp +1);
+				RLE_ZOO_RETURN_ERR;
 			}
 			if (dest) {
 				if (wp + cnt <= dlen) {
 					for (int i = 0 ; i < cnt ; ++i)
 						dest[wp + i] = src[rp + i];
 				} else {
-					return -(rp + 1);
+					RLE_ZOO_RETURN_ERR;
 				}
 			}
 			rp += cnt;
-		} else {
-			// 0x80 is reserved, skip byte as suggested by TN1023.
-			// cnt = 0;
-		}
+		} // else b == 0x80: Reserved. Just skip byte as suggested by TN1023.
 		wp += cnt;
 	}
 	assert(rp == slen);
 	assert((dest == NULL) || (wp <= dlen));
 	return wp;
 }
+#undef RLE_ZOO_RETURN_ERR
 #endif
 
 #ifdef __cplusplus

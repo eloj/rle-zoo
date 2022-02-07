@@ -18,6 +18,8 @@ ssize_t pcx_decompress(const uint8_t *src, size_t slen, uint8_t *dest, size_t dl
 #ifdef RLE_ZOO_PCX_IMPLEMENTATION
 #include <assert.h>
 
+#define RLE_ZOO_RETURN_ERR return ~rp
+
 ssize_t pcx_compress(const uint8_t *src, size_t slen, uint8_t *dest, size_t dlen) {
 	size_t rp = 0;
 	size_t wp = 0;
@@ -35,7 +37,7 @@ ssize_t pcx_compress(const uint8_t *src, size_t slen, uint8_t *dest, size_t dlen
 					dest[wp+0] = 0xC0 | cnt;
 					dest[wp+1] = src[rp];
 				} else {
-					return -(rp+1); // Destination buffer too small
+					RLE_ZOO_RETURN_ERR;
 				}
 			}
 			wp += 2;
@@ -47,7 +49,7 @@ ssize_t pcx_compress(const uint8_t *src, size_t slen, uint8_t *dest, size_t dlen
 				if (wp < dlen) {
 					dest[wp] = src[rp];
 				} else {
-					return -(rp+1);
+					RLE_ZOO_RETURN_ERR;
 				}
 			}
 			++rp;
@@ -69,7 +71,7 @@ ssize_t pcx_decompress(const uint8_t *src, size_t slen, uint8_t *dest, size_t dl
 		// REP
 		if ((b & 0xC0) == 0xC0) {
 			if (!(rp < slen)) {
-				return -(rp + 1);
+				RLE_ZOO_RETURN_ERR;
 			}
 			cnt = b & 0x3F;
 			b = src[rp++];
@@ -79,7 +81,7 @@ ssize_t pcx_decompress(const uint8_t *src, size_t slen, uint8_t *dest, size_t dl
 				for (int i = 0 ; i < cnt ; ++i)
 					dest[wp + i] = b;
 			} else {
-				return -(rp + 1);
+				RLE_ZOO_RETURN_ERR;
 			}
 		}
 		wp += cnt;
@@ -88,6 +90,7 @@ ssize_t pcx_decompress(const uint8_t *src, size_t slen, uint8_t *dest, size_t dl
 	assert((dest == NULL) || (wp <= dlen));
 	return wp;
 }
+#undef RLE_ZOO_RETURN_ERR
 #endif
 
 #ifdef __cplusplus

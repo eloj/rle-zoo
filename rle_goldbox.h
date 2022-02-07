@@ -20,6 +20,8 @@ ssize_t goldbox_decompress(const uint8_t *src, size_t slen, uint8_t *dest, size_
 #ifdef RLE_ZOO_GOLDBOX_IMPLEMENTATION
 #include <assert.h>
 
+#define RLE_ZOO_RETURN_ERR return ~rp
+
 // RLE PARAMS: min CPY=1, max CPY=126, min REP=1, max REP=127
 ssize_t goldbox_compress(const uint8_t *src, size_t slen, uint8_t *dest, size_t dlen) {
 	size_t rp = 0;
@@ -40,7 +42,7 @@ ssize_t goldbox_compress(const uint8_t *src, size_t slen, uint8_t *dest, size_t 
 					dest[wp+0] = ~cnt;
 					dest[wp+1] = src[rp];
 				} else {
-					return -(rp+1); // Destination buffer too small
+					RLE_ZOO_RETURN_ERR;
 				}
 			}
 			wp += 2;
@@ -64,7 +66,7 @@ ssize_t goldbox_compress(const uint8_t *src, size_t slen, uint8_t *dest, size_t 
 				for (int i = 0 ; i < cnt ; ++i)
 					dest[wp + 1 + i] = src[rp + i];
 			} else {
-				return -(rp+1);
+				RLE_ZOO_RETURN_ERR;
 			}
 		}
 		rp += cnt;
@@ -85,14 +87,14 @@ ssize_t goldbox_decompress(const uint8_t *src, size_t slen, uint8_t *dest, size_
 			// REP
 			cnt = (~b) + 1; // equiv. -(int8_t)b
 			if (!(rp < slen)) {
-				return -(rp +1);
+				RLE_ZOO_RETURN_ERR;
 			}
 			if (dest) {
 				if (wp + cnt <= dlen) {
 					for (int i = 0 ; i < cnt ; ++i)
 						dest[wp + i] = src[rp];
 				} else {
-					return -(rp + 1);
+					RLE_ZOO_RETURN_ERR;
 				}
 			}
 			++rp;
@@ -100,14 +102,14 @@ ssize_t goldbox_decompress(const uint8_t *src, size_t slen, uint8_t *dest, size_
 			// CPY
 			cnt = b + 1;
 			if (!(rp + cnt <= slen)) {
-				return -(rp +1);
+				RLE_ZOO_RETURN_ERR;
 			}
 			if (dest) {
 				if (wp + cnt <= dlen) {
 					for (int i = 0 ; i < cnt ; ++i)
 						dest[wp + i] = src[rp + i];
 				} else {
-					return -(rp + 1);
+					RLE_ZOO_RETURN_ERR;
 				}
 			}
 			rp += cnt;
@@ -118,6 +120,7 @@ ssize_t goldbox_decompress(const uint8_t *src, size_t slen, uint8_t *dest, size_
 	assert((dest == NULL) || (wp <= dlen));
 	return wp;
 }
+#undef RLE_ZOO_RETURN_ERR
 #endif
 
 #ifdef __cplusplus
