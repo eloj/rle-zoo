@@ -9,6 +9,8 @@ RLE_VARIANTS:=goldbox packbits pcx
 RLE_VARIANT_HEADERS:=$(addprefix rle_, $(RLE_VARIANTS:=.h))
 RLE_VARIANT_OPS_HEADERS:=$(addprefix ops-, $(RLE_VARIANTS:=.h))
 
+AFLCC?=afl-clang-fast
+
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
@@ -31,7 +33,7 @@ endif
 
 CFLAGS=-std=c11 $(OPT) $(CWARNFLAGS) $(WARNFLAGS) $(MISCFLAGS)
 
-.PHONY: clean backup
+.PHONY: clean backup fuzz
 
 all: tools tests
 
@@ -64,11 +66,20 @@ test: test_rle test_utility test_example
 	$(TEST_PREFIX) ./test_utility
 	$(TEST_PREFIX) ./test_rle
 
+.c.o:
+	$(CC) $(CFLAGS) -c $< -o $@
+
 ops-%.h: rle-genops
 	./rle-genops --genc $* >$@
 
-.c.o:
-	$(CC) $(CFLAGS) -c $< -o $@
+afl-%: fuzzing/afl_*.c $(RLE_VARIANT_HEADERS)
+	$(AFLCC) $(CFLAGS) -I. fuzzing/afl_$(subst -,_,$*).c -o $@
+
+fuzz-%:
+	make afl-$*
+	AFL_AUTORESUME=1 AFL_SKIP_CPUFREQ=1 afl-fuzz -m 16 -i tests -o findings -- ./afl-$*
+
+fuzz: fuzz-driver
 
 backup:
 	@echo -e $(YELLOW)Making backup$(NC)
@@ -76,4 +87,4 @@ backup:
 
 clean:
 	@echo -e $(YELLOW)Cleaning$(NC)
-	rm -f rle-zoo rle-genops rle-parser test_rle test_utility test_example test_includeall $(RLE_VARIANT_OPS_HEADERS) vgcore.* core.* *.gcda
+	rm -f rle-zoo rle-genops rle-parser test_rle test_utility test_example test_includeall afl-driver $(RLE_VARIANT_OPS_HEADERS) vgcore.* core.* *.gcda
