@@ -30,7 +30,7 @@ packbits d @tests/packbits/R128A.rle 128 0x30a4907a
 packbits d @tests/packbits/R128A_C128_R128A.rle 384 0xcf8b3f17
 packbits d- "\x80\xFFA\x80\x80" 2 0xaec4b71e
 
-packbits c @tests/packbits/pb-fuzz-0 8 0
+packbits c @tests/packbits/pb-fuzz-0 8 0x64805f28
 
 ## Invalid input examples:
 ## REP /wo arg at end

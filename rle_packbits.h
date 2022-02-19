@@ -33,7 +33,7 @@ ssize_t packbits_compress(const uint8_t *src, size_t slen, uint8_t *dest, size_t
 		assert((ssize_t)rp >= 0);
 
 		uint8_t cnt = 0;
-		do { ++cnt; } while ((rp + cnt + 1 <= rp + slen) && (cnt < 128) && (src[rp + cnt-1] == src[rp + cnt]));
+		do { ++cnt; } while ((rp + cnt < slen) && (cnt < 128) && (src[rp + cnt-1] == src[rp + cnt]));
 
 		// Output REP.
 		if (cnt > 1) {
