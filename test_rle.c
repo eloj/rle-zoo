@@ -393,7 +393,7 @@ nexttest:
 }
 
 int main(int argc, char *argv[]) {
-	const char *filename = argc > 1 ? argv[1] : "rle-tests.suite";
+	const char *filename = argc > 1 ? argv[1] : "all-tests.suite";
 
 	int res = process_file(filename, 1);
 	if (res < 0) {
