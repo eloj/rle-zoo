@@ -50,9 +50,11 @@ variant used on some unknown data. It also acts as a demonstrator for using `rle
 
 Currently the following extraordinary specimens are grazing the fertile grounds of this most amazing Zoo:
 
-* Packbits
-* Goldbox
-* PCX
+|  Variant  |  Type  | Efficiency | Notes |
+| :-----------: | :-----------: | :-----------: | :------------ |
+| [Packbits](#packbits) | CPY/REP  | Near-optimal | |
+| [Goldbox](#goldbox) | CPY/REP | Sub-optimal | Used by [SSI Goldbox](https://en.wikipedia.org/wiki/Gold_Box) titles |
+| [PCX](#pcx) | LIT/REP | Sub-optimal | |
 
 ### PackBits
 
