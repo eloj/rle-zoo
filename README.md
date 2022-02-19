@@ -50,11 +50,11 @@ variant used on some unknown data. It also acts as a demonstrator for using `rle
 
 Currently the following extraordinary specimens are grazing the fertile grounds of this most amazing Zoo:
 
-|  Variant  |  Type  | Efficiency | Notes |
-| :-----------: | :-----------: | :-----------: | :------------ |
-| [Packbits](#packbits) | CPY/REP  | Near-optimal | |
-| [Goldbox](#goldbox) | CPY/REP | Sub-optimal | Used by [SSI Goldbox](https://en.wikipedia.org/wiki/Gold_Box) titles |
-| [PCX](#pcx) | LIT/REP | Sub-optimal | |
+|  Variant  |  Type  | Code Use | REP Range | CPY/LIT Range | Spec. | Notes |
+| :-------: | :----: | :------: | :-------: | :-----------: | :---: | :---- |
+| [Packbits](#packbits) | CPY | Near-optimal | 2 - 128 | 1 - 128 | ref[^foottn1023] | One code (0x80) wasted on NOP. |
+| [Goldbox](#goldbox) | CPY | Sub-optimal | 1 - 127 | 1 - 126 | n/a |  Used by [SSI Goldbox](https://en.wikipedia.org/wiki/Gold_Box) titles. Many quirks. |
+| [PCX](#pcx) | LIT | Sub-optimal | 0 - 63 | 0 - 191 | [link](http://bespin.org/~qz/pc-gpe/pcx.txt) | |
 
 ### PackBits
 
