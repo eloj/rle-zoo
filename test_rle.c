@@ -281,14 +281,20 @@ static int map_file(const char *filename, void **data, size_t *size) {
 	return 0;
 }
 
-int main(int argc, char *argv[]) {
-	const char *filename = argc > 1 ? argv[1] : "rle-tests.suite";
+static int process_file(const char *filename, int depth) {
+
+	if (depth > 3) {
+		fprintf(stderr, "Maximum include depth reached -- loop or just silly?\n");
+		return -1;
+	}
 
 	FILE *f = fopen(filename, "rb");
 	if (!f) {
 		fprintf(stderr, "ERROR: Could not open input file '%s': %m\n", filename);
-		exit(1);
+		return -1;
 	}
+
+	printf("<< Processing '%s':\n", filename);
 
 	char *line = NULL;
 	size_t failed_tests = 0;
@@ -296,14 +302,29 @@ int main(int argc, char *argv[]) {
 	size_t line_no = 0;
 	ssize_t nread;
 	while ((nread = getline(&line, &line_len, f)) != -1) {
+		if (nread)
+			line[nread - 1] = 0; // Overwrite \n
 		++line_no;
-		if (line_len < 3 || line[0] == '#' || line[0] == ';') {
+
+		// Skip comments
+		if (nread < 3 || line[0] == '#' || line[0] == ';') {
 			continue;
 		}
+
 		if (strncmp(line, "---", 3) == 0) {
 			TEST_WARNMSG("end-marker hit");
 			break;
 		}
+
+		if (strncmp(line, "include", 7) == 0) {
+			int res = process_file(line + 8, depth + 1);
+			if (res < 0) {
+				failed_tests = -1;
+				break;
+			}
+			failed_tests += res;
+		}
+
 		// Parse input line
 		// goldbox c "AAAAAAAAAAAAAAAA" 2 0xhash
 		char *method = NULL;
@@ -315,7 +336,7 @@ int main(int argc, char *argv[]) {
 		// TODO: Parsing the hex this way is bad, e.g adding a hex digit up front still pass.
 		int parsed = sscanf(line, "%ms %ms %ms %i %x", &method, &te.actions, &input, &exsize, &exhash);
 		if (parsed >= 3) {
-			printf("<< %s", line);
+			printf("<< %s\n", line);
 			struct rle_t * rle = get_rle_by_name(method);
 			if (rle) {
 				te.expected_size = exsize;
@@ -368,14 +389,26 @@ nexttest:
 	free(line);
 	fclose(f);
 
+	return failed_tests;
+}
+
+int main(int argc, char *argv[]) {
+	const char *filename = argc > 1 ? argv[1] : "all-tests.suite";
+
+	int res = process_file(filename, 1);
+	if (res < 0) {
+		fprintf(stderr, RED "Test error." NC "\n");
+		exit(1);
+	}
+
 	if (flag_roundtrip == 0) {
 		printf(YELLOW "Warning: Roundtripping disabled -- test coverage decreased!" NC "\n");
 	}
 
-	if (failed_tests == 0) {
+	if (res == 0) {
 		printf(GREEN "All tests of '%s' passed. (incl. %d roundtrip checks)" NC "\n", filename, num_roundtrip);
 	} else {
-		fprintf(stderr, RED "%zu test failures in suite '%s'." NC "\n", failed_tests, filename);
+		fprintf(stderr, RED "%d test failures in suite '%s'." NC "\n", res, filename);
 		exit(1);
 	}
 
