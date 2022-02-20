@@ -14,7 +14,7 @@ You need to install AFL++, specifically you need `afl-clang-fast`.
 ## Building & Running
 
 Running `make afl-driver` will build the default driver using `afl-clang-fast`. You
-can overrider the AFL++ wrapper by setting e.g `AFLCC=afl-cc`.
+can override the AFL++ wrapper by setting e.g `AFLCC=afl-cc`.
 
 You can `make fuzz` or `make fuzz-driver` to build the a driver and start AFL++.
 
