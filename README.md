@@ -9,6 +9,14 @@ A collection of Run-Length Encoders and Decoders, and associated tooling for exp
 * The codecs are written foremost to be robust, correct, and clear and easy to understand, not for performance.
 * I'm mostly interested in exploring legacy formats.
 
+## Features
+
+* Single-Header Libraries.
+* Releases are:
+	* [Valgrind](https://valgrind.org/) clean,
+	* [scan-build](https://clang-analyzer.llvm.org/scan-build.html) clean, and
+	* [AFL++](https://aflplus.plus/) clean (for some reasonable run-time).
+
 ## What is Run-Length Encoding?
 
 "_Run-length encoding (RLE) is a form of lossless data compression in which runs of data (sequences in which the same data value occurs in many consecutive data elements) are stored as a single data value and count, rather than as the original run._" -- [Wikipedia](https://en.wikipedia.org/wiki/Run-length_encoding)
@@ -16,7 +24,7 @@ A collection of Run-Length Encoders and Decoders, and associated tooling for exp
 At its most basic, a Run-Length Encoder process input into a series of REP (repeat) and CPY (copy) operations.
 Sometimes the CPY operation is explicit, sometimes it's in the form of literals (LIT).
 
-## I just need one, what do I do?
+## Usage Example
 
 The `rle_*.h` files are single-header libraries. If you just need one, any one, I recommend downloading `rle_packbits.h` and
 looking at `test_example.c` for how to use it.
