@@ -12,9 +12,15 @@ extern "C" {
 
 #include <stdint.h>
 #include <stddef.h>
+#include <stdlib.h>
 #include <stdio.h>
+#include <unistd.h>
+#include <errno.h>
+#include <limits.h>
 
 void fprint_hex(FILE *stream, const uint8_t *data, size_t len, int width, const char *indent, int show_offset);
+
+int parse_ofs_len(const char *in, ssize_t *at_ofs, ssize_t *at_len);
 
 size_t expand_escapes(const char *input, size_t slen, char *dest, size_t dlen, int *err);
 
@@ -34,6 +40,44 @@ void fprint_hex(FILE *f, const uint8_t *data, size_t len, int width, const char 
 			}
 		}
 	}
+}
+
+// Parse '[ofs:len]', where ofs is optional and len can be negative.
+int parse_ofs_len(const char *in, ssize_t *at_ofs, ssize_t *at_len) {
+	int rp = 0;
+	char *endptr = NULL;
+
+	if (in[rp++] != '[')
+		return -1;
+
+	// Parse offset
+	if (isdigit(in[rp])) {
+		errno = 0;
+		long ofs = strtol(in + rp, &endptr, 0);
+		if (errno != 0) {
+			return -3;
+		}
+		rp = endptr - in;
+		*at_ofs = ofs;
+	}
+	if (in[rp] == ':') {
+		++rp;
+		// Parse length
+		if (isdigit(in[rp]) || (in[rp] == '-')) {
+			errno = 0;
+			long len = strtol(in + rp, &endptr, 0);
+			if (errno != 0) {
+				return -4;
+			}
+			rp = endptr - in;
+			*at_len = len;
+		}
+	}
+
+	if (in[rp++] != ']')
+		return -2;
+
+	return rp;
 }
 
 static uint8_t nibble(const char c) {

@@ -146,8 +146,9 @@ static int run_rle_test(struct rle_t *rle, struct test *te, const char *filename
 	int no_roundtrip = strchr(action, '-') != NULL;
 	ssize_t res = 0;
 
-	// COMPRESS
 	if (*action == 'c') {
+		// COMPRESS
+
 		// First do a length-determination check on the input.
 		ssize_t len_check = rle->compress(te->input, te->len, NULL, 0);
 		if (len_check != te->expected_size) {
@@ -196,10 +197,9 @@ static int run_rle_test(struct rle_t *rle, struct test *te, const char *filename
 		} else {
 			// end length check/input validation
 		}
-	}
+	} else if (*action == 'd') {
+		// DECOMPRESS
 
-	// DECOMPRESS
-	if (*action == 'd') {
 		// First do a length-determination check on the input.
 		ssize_t len_check = rle->decompress(te->input, te->len, NULL, 0);
 		if (len_check != te->expected_size) {
@@ -248,6 +248,9 @@ static int run_rle_test(struct rle_t *rle, struct test *te, const char *filename
 		} else {
 			// end length check/input validation
 		}
+	} else {
+		TEST_ERRMSG("Invalid action");
+		retval = 1;
 	}
 
 	free(tmp_buf);
@@ -255,7 +258,7 @@ static int run_rle_test(struct rle_t *rle, struct test *te, const char *filename
 	return retval;
 }
 
-static int map_file(const char *filename, void **data, size_t *size) {
+static int map_file(const char *filename, size_t ofs, ssize_t len, void **data, size_t *size) {
 	FILE *f = fopen(filename, "rb");
 	if (!f) {
 		return 1;
@@ -265,18 +268,30 @@ static int map_file(const char *filename, void **data, size_t *size) {
 	if (res != 0) {
 		errx(1, "System has broken fseek() -- guess we should have used fstat instead, huh.");
 	}
-	size_t len = ftell(f);
-	fseek(f, 0, SEEK_SET);
+	size_t flen = ftell(f);
 
-	void *base = mmap(NULL, len, PROT_READ | PROT_WRITE, MAP_PRIVATE, fileno(f), 0);
-	if (base == MAP_FAILED) {
-		fclose(f);
-		return 2;
+	if (len == 0) {
+		len = flen - ofs;
+	} else if (len < 0) {
+		len = -len;
+		ofs = flen - len;
 	}
-	fclose(f);
+	// printf("map: seek ofs:%zu, len:%zd, flen:%zu\n", ofs, len, flen);
+	fseek(f, ofs, SEEK_SET);
 
-	*data = base;
-	*size = len;
+	void *base = NULL;
+	if (ofs + len <= flen) {
+		base = mmap(NULL, len, PROT_READ | PROT_WRITE, MAP_PRIVATE, fileno(f), 0);
+		if (base == MAP_FAILED) {
+			fclose(f);
+			return 2;
+		}
+		*data = base;
+		*size = len;
+		fclose(f);
+	} else {
+		return 3;
+	}
 
 	return 0;
 }
@@ -346,8 +361,22 @@ static int process_file(const char *filename, int depth) {
 					// Read input from file.
 					void *raw = NULL;
 					size_t raw_len = 0;
-					if (map_file(input + 1, &raw, &raw_len) != 0) {
-						TEST_WARNMSG("file error reading '%s': %m", input+1);
+					ssize_t at_ofs = 0;
+					ssize_t at_len = 0;
+
+					int fn_ofs = 1;
+					if (input[fn_ofs] == '[') {
+						// parse offset + len
+						int advance = parse_ofs_len(input + fn_ofs, &at_ofs, &at_len);
+						if (advance < 0) {
+							TEST_WARNMSG("parse error in range: %d", advance);
+							goto nexttest;
+						}
+						fn_ofs += advance;
+					}
+
+					if (map_file(input + fn_ofs, at_ofs, at_len, &raw, &raw_len) != 0) {
+						TEST_WARNMSG("file error reading '%s': %m", input+fn_ofs);
 						goto nexttest;
 					} else {
 						te.len = raw_len;

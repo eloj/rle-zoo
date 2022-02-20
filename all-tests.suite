@@ -5,6 +5,7 @@
 #  * You can change a length or hash to something invalid to get a hexdump of the data to inspect.
 #  * Inserting a line with '---' will stop testing at that point.
 #  * A '-' after the action force-disables roundtrip (re-(de)compressing output) checking.
+#  * '@' includes a file for input. Can extract a slice with @[offset:len]
 #
 # variant c|d "input"|@input expected-size expected-hash
 include tests/goldbox/goldbox.suite

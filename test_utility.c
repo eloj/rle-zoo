@@ -288,10 +288,75 @@ static int test_expand_escapes(void) {
 	return fails;
 }
 
+static int test_parse_ofs_len(void) {
+	const char *testname = "parse_ofs_len";
+	size_t fails = 0;
+
+	struct parse_test {
+		const char *input;
+		ssize_t expected_ofs;
+		ssize_t expected_len;
+		int expected_ret;
+	} tests[] = {
+		// VALID (ret 0 == input length):
+		{ "[]", 0, 0, 0 },
+		{ "[:]", 0, 0, 0 },
+		{ "[12345678]", 12345678, 0, 0 },
+		{ "[12345678:]", 12345678, 0, 0 },
+		{ "[12345678:9876543]", 12345678, 9876543, 0 },
+		{ "[0x10:0x20]", 16, 32, 0 },
+		{ "[12345678:-9876543]", 12345678, -9876543, 0 },
+		{ "[:9876543]", 0, 9876543, 0 },
+		{ "[:-9876543]", 0, -9876543, 0 },
+		// INVALID:
+		{ "", 0, 0, -1 },
+		{ "[:", 0, 0, -2 },
+		{ "[0abba]", 0, 0, -2 },
+		{ "[:1abba]", 0, 0, -2 },
+		{ "[9999999999999999999]", 0, 0, -3 },
+		{ "[:9999999999999999999]", 0, 0, -4 },
+	};
+
+	for (size_t i = 0 ; i < sizeof(tests)/sizeof(tests[0]) ; ++i) {
+		struct parse_test *test = &tests[i];
+		ssize_t res_ofs = 0, res_len = 0;
+
+		int advance = parse_ofs_len(test->input, &res_ofs, &res_len);
+
+		if (test->expected_ret == 0) {
+			test->expected_ret = strlen(test->input);
+		}
+
+		if (advance != test->expected_ret) {
+			TEST_ERRMSG("unexpected return-value, expected '%d', got '%d'.", test->expected_ret, advance);
+			++fails;
+			continue;
+		}
+
+		if (res_ofs != test->expected_ofs) {
+			TEST_ERRMSG("parsed offset mismatch, expected '%zd', got '%zd'.", test->expected_ofs, res_ofs);
+			++fails;
+			continue;
+		}
+		if (res_ofs != test->expected_ofs) {
+			TEST_ERRMSG("parsed length mismatch, expected '%zd', got '%zd'.", test->expected_len, res_len);
+			++fails;
+			continue;
+		}
+
+	}
+
+	if (fails == 0) {
+		printf("Suite '%s' passed " GREEN "OK" NC "\n", testname);
+	}
+
+	return fails;
+}
 int main(void) {
 	size_t failed = 0;
 
 	failed += test_expand_escapes();
+	failed += test_parse_ofs_len();
 	failed += test_rep();
 	failed += test_cpy();
 

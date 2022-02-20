@@ -21,6 +21,11 @@ packbits c @tests/C127 128 0x8ef84124
 packbits c @tests/C128 129 0x6560f52f
 packbits c @tests/C129 131 0x1c1c1e9b
 
+# slicing examples: [offset:len]
+packbits c- @[257:]tests/R128A_C128_R128A 2 0x9ef7237a
+packbits c- @[256:128]tests/R128A_C128_R128A 2 0xaa108be3
+packbits c- @[:-126]tests/R128A_C128_R128A 2 0x8d55bb0d
+
 packbits c @tests/R128A_C128 131 0x168a88e0
 packbits c @tests/R128A_C128_R128A 133 0xd9602121
 packbits c @tests/R128A_C129 133 0x310143af
