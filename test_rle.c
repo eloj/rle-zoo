@@ -15,6 +15,8 @@
 #include "rle_packbits.h"
 #define RLE_ZOO_PCX_IMPLEMENTATION
 #include "rle_pcx.h"
+#define RLE_ZOO_ICNS_IMPLEMENTATION
+#include "rle_icns.h"
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -68,6 +70,11 @@ struct rle_t {
 		.name = "pcx",
 		.compress = pcx_compress,
 		.decompress = pcx_decompress
+	},
+	{
+		.name = "icns",
+		.compress = icns_compress,
+		.decompress = icns_decompress
 	},
 };
 

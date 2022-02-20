@@ -17,6 +17,8 @@
 #include "rle_packbits.h"
 #define RLE_ZOO_PCX_IMPLEMENTATION
 #include "rle_pcx.h"
+#define RLE_ZOO_ICNS_IMPLEMENTATION
+#include "rle_icns.h"
 
 int main(void) {
 	const uint8_t input[] = "ABBCCCDDDDEEEEE";
@@ -27,6 +29,7 @@ int main(void) {
 	res += goldbox_compress(input, len, NULL, 0);
 	res += packbits_compress(input, len, NULL, 0);
 	res += pcx_compress(input, len, NULL, 0);
+	res += icns_compress(input, len, NULL, 0);
 
 	printf("%zd bytes required.\n", res);
 

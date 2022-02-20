@@ -1,0 +1,29 @@
+#
+# RLE compression/decompression test suite
+#
+# variant c|d "input"|@input expected-size expected-hash
+icns c "A" 2 0x4271e96d
+icns c "AB" 3 0x89d0023c
+icns c "ABB" 4 0xed36e140
+icns c "ABBB" 4 0x71c0ced2
+icns c "AA" 3 0x9a80f1c8
+icns c "AAB" 4 0xd9d149d9
+icns c "AABB" 5 0x6194ba98
+icns c "AABBB" 5 0x322769d3
+icns c "AAA" 2 0xb9b21394
+icns c "AAAB" 4 0xd8a3fd14
+
+icns c "AAAAAAAAAAAAAAAA" 2 0x798e2987
+icns c "ABCDEFGHIJKLMNOP" 17 0xa81a0e90
+
+icns c @[:127]tests/R512A 2 0xd5756577
+icns c @[:128]tests/R512A 2 0xc6d7fd00
+icns c @[:129]tests/R512A 2 0xf2305599
+icns c @[:130]tests/R512A 2 0xe192cdee
+icns c @[:131]tests/R512A 4 0xb1502f9d
+icns c @tests/C126 127 0xed57b1f6
+icns c @tests/C127 128 0x8ef84124
+icns c @tests/C128 129 0x6560f52f
+icns c @tests/C129 131 0x1c1c1e9b
+
+icns d "\2\1\2\2\x80\3\x81\4\x82\5" 15 0x8f6238d7

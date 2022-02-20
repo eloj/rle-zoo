@@ -3,7 +3,7 @@
 
 [![Build status](https://github.com/eloj/rle-zoo/workflows/build/badge.svg)](https://github.com/eloj/rle-zoo/actions/workflows/c-cpp.yml)
 
-A collection of Run-Length Encoders and Decoders, and associated tooling for exploring this space. So far there are only three animals in the zoo. It's a very small zoo.
+A collection of Run-Length Encoders and Decoders, and associated tooling for exploring this space. So far there are only four animals in the zoo. It's a very small zoo.
 
 * _WHILE THIS NOTE PERSISTS, I MAY FORCE PUSH TO MASTER_
 * The codecs are written foremost to be robust, correct, and clear and easy to understand, not for performance.
@@ -63,6 +63,7 @@ Currently the following extraordinary specimens are grazing the fertile grounds 
 | [Packbits](#packbits) | CPY | Near-optimal | 2 - 128 | 1 - 128 | ref[^foottn1023] | One code (0x80) wasted on NOP. |
 | [Goldbox](#goldbox) | CPY | Sub-optimal | 1 - 127 | 1 - 126 | n/a |  Used by [SSI Goldbox](https://en.wikipedia.org/wiki/Gold_Box) titles. Many quirks. |
 | [PCX](#pcx) | LIT | Sub-optimal | 0 - 63 | 0 - 191 | [link](http://bespin.org/~qz/pc-gpe/pcx.txt) | |
+| [Apple ICNS](#apple-icns) | CPY | Optimal | 3 - 130 | 1 - 128 | n/a | |
 
 ### PackBits
 
@@ -165,9 +166,31 @@ literals as they are seen will probably do the former.
 
 The existance of a `REP 0` operation is an inefficiency, and allows the encoder to encode data that is not included in the decoded output.
 
+### Apple ICNS
+
+Use by Apple to compress icon resources.
+
+#### Apple ICNS Format
+
+* One OP byte encoding the operation and `length`:
+	* 0x00 => CPY 1
+	* 0x01 => CPY 2
+	* ..
+	* 0x7d => CPY 126
+	* 0x7e => CPY 127
+	* 0x7f => CPY 128
+	* 0x80 => REP 3
+	* 0x81 => REP 4
+	* 0x82 => REP 5
+	* ..
+	* 0xfe => REP 129
+	* 0xff => REP 130
+* CPY: If high-bit is clear, then `OP + 1` literal bytes follow.
+* REP: If high-bit is set, then repeat next byte `OP - 125` times.
+
 ## TODO
 
-* Add more animals. Potential candidates: Apple 'icns' Icons, BMP(?), TGA, ...
+* Add more animals. Potential candidates: BMP(?), TGA, ...
 * Improve `rle-zoo` to behave more like a standard UNIX filter.
 
 ## License

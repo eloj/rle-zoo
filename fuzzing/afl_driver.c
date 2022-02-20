@@ -12,6 +12,8 @@
 #include "rle_packbits.h"
 #define RLE_ZOO_PCX_IMPLEMENTATION
 #include "rle_pcx.h"
+#define RLE_ZOO_ICNS_IMPLEMENTATION
+#include "rle_icns.h"
 
 /* this lets the source compile without afl-clang-fast/lto */
 #ifndef __AFL_FUZZ_TESTCASE_LEN
@@ -54,6 +56,9 @@ int main() {
 
 		resc += pcx_compress(input, len, dest, sizeof(dest));
 		resd += pcx_decompress(input, len, dest, sizeof(dest));
+
+		resc += icns_compress(input, len, dest, sizeof(dest));
+		resd += icns_decompress(input, len, dest, sizeof(dest));
 	}
 	printf("resc=%zd, resd=%zd\n", resc, resd);
 	return 0;

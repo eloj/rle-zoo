@@ -11,3 +11,4 @@
 include tests/goldbox/goldbox.suite
 include tests/packbits/packbits.suite
 include tests/pcx/pcx.suite
+include tests/icns/icns.suite
