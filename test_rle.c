@@ -338,6 +338,7 @@ static int process_file(const char *filename, int depth) {
 				break;
 			}
 			failed_tests += res;
+			continue;
 		}
 
 		// Parse input line
