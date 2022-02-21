@@ -91,6 +91,8 @@ into Electronic Arts IFF ILBM (unverified).
 The encoder should not generate 0x80, which is reserved. The technical note from Apple states that a decoder should
 "_[handle] this situation by skipping any flag-counter byte with this value and interpreting the next byte as the next flag-counter byte._"
 
+The existance of the `NOP` and `REP 2` -- which requires two bytes to encode a run of two bytes -- are inefficiencies in the coding. Not terrible, but you can do better.
+
 [^foottn1023]: "Understanding PackBits", Apple [Technical Note TN1023](http://web.archive.org/web/20080705155158/http://developer.apple.com/technotes/tn/tn1023.html).
 
 ### Goldbox
@@ -168,7 +170,8 @@ The existance of a `REP 0` operation is an inefficiency, and allows the encoder 
 
 ### Apple ICNS
 
-Use by Apple to compress icon resources.
+Used by Apple to compress icon resources. This RLE variant uses a sensible encoding scheme, recognizing that
+any `REP` with a count of 2 or less is redundant, and doesn't waste precious code space on a `NOP`.
 
 #### Apple ICNS Format
 
@@ -188,10 +191,8 @@ Use by Apple to compress icon resources.
 * CPY: If high-bit is clear, then `OP + 1` literal bytes follow.
 * REP: If high-bit is set, then repeat next byte `OP - 125` times.
 
-Unlike many other variants, this one makes efficient use of the code space and doesn't include any `NOP` operation,
-or overlapping ways to output one character. The `CPY` OPs (0x00-0x7f) are the same as in packbits, but the `REP` OPs (0x80-)
-have been adjusted up to a minimum count of three. They also come in ascending order compared with packbits; more characters
-are copied as the OP increase in value, versus fewer in packbits.
+The `CPY` OPs (0x00-0x7f) are the same as in packbits, but the `REP` OPs (0x80-) have been adjusted up to a minimum count of three.
+They also come in ascending order compared with packbits; more characters are copied as the OP increase in value, versus fewer in packbits.
 
 ## TODO
 
