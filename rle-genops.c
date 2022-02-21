@@ -183,6 +183,37 @@ static struct rle8 rle8_encode_pcx(struct rle8 cmd) {
 	return res;
 }
 
+static struct rle8 rle8_decode_icns(uint8_t input) {
+	struct rle8 cmd;
+
+	if (input >= 0x80) {
+		cmd.op = RLE_OP_REP;
+		cmd.cnt = (int8_t)input - 125; // 3-130
+	} else {
+		cmd.op = RLE_OP_CPY;
+		cmd.cnt = input + 1; // 1-128
+	}
+
+	assert((cmd.op != RLE_OP_REP) || (cmd.cnt <= 130 || cmd.cnt >= 3));
+	assert((cmd.op != RLE_OP_CPY) || (cmd.cnt <= 128 || cmd.cnt >= 1));
+
+	return cmd;
+}
+
+static struct rle8 rle8_encode_icns(struct rle8 cmd) {
+	struct rle8 res = { RLE_OP_INVALID, 0 };
+
+	if (cmd.op == RLE_OP_REP && (cmd.cnt >= 3 && cmd.cnt <= 130)) {
+		res.op = RLE_OP_REP;
+		res.cnt = cmd.cnt + 125;
+	} else if (cmd.op == RLE_OP_CPY && (cmd.cnt >= 1 && cmd.cnt <= 128)) {
+		res.op = RLE_OP_CPY;
+		res.cnt = cmd.cnt - 1;
+	}
+
+	return res;
+}
+
 static int rle8_display_ops(struct rle_parser *p) {
 	printf("// Automatically generated code table for RLE8 variant '%s'\n", p->name);
 	printf("%s", gen_header);
@@ -348,6 +379,11 @@ struct rle_parser parsers[] = {
 		"pcx",
 		rle8_encode_pcx,
 		rle8_decode_pcx
+	},
+	{
+		"icns",
+		rle8_encode_icns,
+		rle8_decode_icns
 	}
 };
 static const size_t NUM_VARIANTS = sizeof(parsers)/sizeof(parsers[0]);

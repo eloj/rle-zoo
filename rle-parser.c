@@ -71,11 +71,13 @@ static const char *rle_op_cstr(enum RLE_OP op) {
 #include "ops-packbits.h"
 #include "ops-goldbox.h"
 #include "ops-pcx.h"
+#include "ops-icns.h"
 
 static struct rle8_tbl* rle8_variants[] = {
 	&rle8_table_goldbox,
 	&rle8_table_packbits,
 	&rle8_table_pcx,
+	&rle8_table_icns,
 };
 
 static int debug_print = 1;

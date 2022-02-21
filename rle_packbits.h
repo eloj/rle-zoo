@@ -15,7 +15,7 @@ extern "C" {
 ssize_t packbits_compress(const uint8_t *src, size_t slen, uint8_t *dest, size_t dlen);
 ssize_t packbits_decompress(const uint8_t *src, size_t slen, uint8_t *dest, size_t dlen);
 
-#ifdef RLE_ZOO_PACKBITS_IMPLEMENTATION
+#if defined(RLE_ZOO_PACKBITS_IMPLEMENTATION) || defined(RLE_ZOO_IMPLEMENTATION)
 #include <assert.h>
 
 static_assert(sizeof(size_t) == sizeof(ssize_t), "");

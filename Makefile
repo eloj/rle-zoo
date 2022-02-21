@@ -5,7 +5,7 @@ MISCFLAGS=-fstack-protector -fvisibility=hidden
 DEVFLAGS=-ggdb -DDEBUG -Wno-unused
 STRICT_FLAGS=-Werror -Wconversion
 
-RLE_VARIANTS:=goldbox packbits pcx
+RLE_VARIANTS:=goldbox packbits pcx icns
 RLE_VARIANT_HEADERS:=$(addprefix rle_, $(RLE_VARIANTS:=.h))
 RLE_VARIANT_OPS_HEADERS:=$(addprefix ops-, $(RLE_VARIANTS:=.h))
 

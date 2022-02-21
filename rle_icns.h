@@ -1,8 +1,6 @@
 /*
-	Run-Length Encoder/Decoder (RLE), Goldbox Variant
+	Run-Length Encoder/Decoder (RLE), Apple ICNS Variant
 	Copyright (c) 2022, Eddy L O Jansson. Licensed under The MIT License.
-
-	This code has been specifically crafted to be compatible with the SSI Goldbox games.
 
 	See https://github.com/eloj/rle-zoo
 */
@@ -14,10 +12,10 @@ extern "C" {
 #include <stddef.h>
 #include <sys/types.h> // ssize_t
 
-ssize_t goldbox_compress(const uint8_t *src, size_t slen, uint8_t *dest, size_t dlen);
-ssize_t goldbox_decompress(const uint8_t *src, size_t slen, uint8_t *dest, size_t dlen);
+ssize_t icns_compress(const uint8_t *src, size_t slen, uint8_t *dest, size_t dlen);
+ssize_t icns_decompress(const uint8_t *src, size_t slen, uint8_t *dest, size_t dlen);
 
-#if defined(RLE_ZOO_GOLDBOX_IMPLEMENTATION) || defined(RLE_ZOO_IMPLEMENTATION)
+#if defined(RLE_ZOO_ICNS_IMPLEMENTATION) || defined(RLE_ZOO_IMPLEMENTATION)
 #include <assert.h>
 
 static_assert(sizeof(size_t) == sizeof(ssize_t), "");
@@ -25,8 +23,8 @@ static_assert(sizeof(size_t) == sizeof(ssize_t), "");
 // return -(rp + 1) ... mask so it can't flip positive. Give up and just always return -1?
 #define RLE_ZOO_RETURN_ERR return ~(rp & ((size_t)~0 >> 1UL))
 
-// RLE PARAMS: min CPY=1, max CPY=126, min REP=1, max REP=127
-ssize_t goldbox_compress(const uint8_t *src, size_t slen, uint8_t *dest, size_t dlen) {
+// RLE PARAMS: min CPY=1, max CPY=128, min REP=3, max REP=130
+ssize_t icns_compress(const uint8_t *src, size_t slen, uint8_t *dest, size_t dlen) {
 	size_t rp = 0;
 	size_t wp = 0;
 
@@ -35,17 +33,14 @@ ssize_t goldbox_compress(const uint8_t *src, size_t slen, uint8_t *dest, size_t 
 		assert((ssize_t)rp >= 0);
 
 		uint8_t cnt = 0;
+		do { ++cnt; } while ((rp + cnt < slen) && (cnt < 130) && (src[rp + cnt - 1] == src[rp + cnt]));
 
-		// Count number of same bytes, up to 126
-		while ((rp+cnt+1 < slen) && (src[rp+cnt] == src[rp+cnt+1]) && (cnt < 126)) {
-			++cnt;
-		}
-
-		// Output REP. Also encode the last characters as a REP, even if it's just one.
-		if (cnt > 0 || (rp+cnt+1 == slen)) {
+		// Output REP.
+		if (cnt >= 3) {
+			assert(cnt >= 3 && cnt <= 130);
 			if (dest) {
 				if (wp + 1 < dlen) {
-					dest[wp+0] = ~cnt;
+					dest[wp+0] = (uint8_t)(cnt + 125);
 					dest[wp+1] = src[rp];
 				} else {
 					RLE_ZOO_RETURN_ERR;
@@ -53,16 +48,23 @@ ssize_t goldbox_compress(const uint8_t *src, size_t slen, uint8_t *dest, size_t 
 			}
 			wp += 2;
 			rp += cnt;
-			rp++;
 			continue;
 		}
-
 		cnt = 0;
-		while ((rp+cnt+1 < slen) && (src[rp+cnt] != src[rp+cnt+1]) && (cnt < 126)) { // Accepting more makes us incompatible with PoR
-			++cnt;
+		int repcnt = 0; // zero-based
+
+		// Count number of literal bytes, up to 128, allowing 2 reps. Ugly.
+		do { ++cnt; } while ((rp + cnt < slen) && (cnt < 128) && (
+			((src[rp + cnt - 1] != src[rp + cnt]) && !(repcnt = 0)) ||
+			(++repcnt < 2)
+		));
+		// Adjust if over-scanned.
+		if (repcnt == 2) {
+			cnt -= 2;
 		}
 
 		assert(cnt > 0);
+		assert(cnt <= 128);
 		assert(rp + cnt <= slen);
 
 		// Output CPY
@@ -83,18 +85,18 @@ ssize_t goldbox_compress(const uint8_t *src, size_t slen, uint8_t *dest, size_t 
 	return (ssize_t)wp;
 }
 
-ssize_t goldbox_decompress(const uint8_t *src, size_t slen, uint8_t *dest, size_t dlen) {
+ssize_t icns_decompress(const uint8_t *src, size_t slen, uint8_t *dest, size_t dlen) {
 	size_t wp = 0;
 	size_t rp = 0;
 	while (rp < slen) {
 		assert((ssize_t)wp >= 0);
 		assert((ssize_t)rp >= 0);
 
-		uint8_t cnt;
+		uint8_t cnt = 0;
 		uint8_t b = src[rp++];
-		if (b & 0x80) {
+		if (b >= 0x80) {
 			// REP
-			cnt = (~b) + 1; // equiv. -(int8_t)b
+			cnt = (uint8_t)(b - 125);
 			if (!(rp < slen)) {
 				RLE_ZOO_RETURN_ERR;
 			}

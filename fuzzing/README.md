@@ -7,6 +7,14 @@ compression and decompression code through a fuzzer, specifically [AFL++ - Ameri
 It's written to run in the persistent mode with shared memory, which is
 the optimal mode for speed, but requires LLVM mode.
 
+Note that it's not generally possible to verify output by roundtripping
+it (i.e compress-\>decompress-\>compress), because some encoders support
+NOP operations which doesn't carry over into the decompressed stream.
+
+By default it will use all available encoders and decoders. If you've
+only added a new one, simply comment out the ones you don't care about
+for better performance.
+
 ## Prerequisites
 
 You need to install AFL++, specifically you need `afl-clang-fast`.
