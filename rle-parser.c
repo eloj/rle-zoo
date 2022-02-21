@@ -40,7 +40,6 @@ struct rle8 {
 struct rle8_tbl {
 	const char *name;
 	enum RLE_OP op_used;
-	const size_t encode_tbl_len;
 	const int16_t *encode_tbl[3];
 	const struct rle8 *decode_tbl;
 	const size_t minmax_op[3][2];
@@ -114,7 +113,7 @@ static int rle_parse_encode(struct rle8_tbl *rle, const uint8_t *src, size_t sle
 	while (rp < slen) {
 		uint8_t cnt = rle_count_rep(src + rp, slen - rp, max_rep);
 		if (cnt >= min_rep) {
-			assert(cnt < rle->encode_tbl_len);
+			// assert(cnt < rle->encode_tbl_len); // TODO: FIXME!
 			// Output RLE_OP_REP <cnt>
 			int op = rle->encode_tbl[RLE_OP_REP][cnt];
 			assert(op > -1);
@@ -126,7 +125,7 @@ static int rle_parse_encode(struct rle8_tbl *rle, const uint8_t *src, size_t sle
 
 		cnt = rle_count_cpy(src + rp, slen - rp, max_cpy);
 		if (cnt >= min_cpy) {
-			assert(cnt < rle->encode_tbl_len);
+			// assert(cnt < rle->encode_tbl_len); // TODO: FIXME!
 			// Output RLE_OP_CNT <cnt>
 			int op = rle->encode_tbl[RLE_OP_CPY][cnt];
 			assert(op > -1);

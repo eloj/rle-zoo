@@ -253,56 +253,31 @@ static void rle8_generate_decode_table(struct rle_parser *p) {
 	printf("\n};\n");
 }
 
-static void rle8_generate_encode_tables(struct rle_parser *p) {
-	printf("\n// Encode tables for RLE8 variant '%s'\n", p->name);
+static size_t rle8_generate_op_encode_array(struct rle_parser *p, int OP, char *buf, size_t len) {
 
 	// TODO: This should be autodetected by max of valid CPY/REP/LIT encoding, rest padded to -1
 	int max_len = 256;
-	printf("static int16_t rle8_tbl_encode_%s[][%d] = {\n", p->name, max_len);
 
-	printf("\t// RLE_OP_CPY 0..%d\n", max_len - 1);
-	printf("\t{ ");
+	size_t wp = 0;
+	wp += snprintf(buf + wp, len - 1 - wp, "\t\t// RLE_OP_%s 0..%d\n", rle_op_cstr(OP), max_len - 1);
+	wp += snprintf(buf + wp, len - 1 - wp, "\t\t(int16_t[]){ ");
+
 	for (int i=0 ; i < max_len ; ++i) {
-		if (i > 0) printf(", ");
-		struct rle8 cmd = { RLE_OP_CPY, i };
+		if (i > 0)
+			wp += snprintf(buf + wp, len - 1 - wp, ",");
+		struct rle8 cmd = { OP, i };
 		struct rle8 code = p->rle8_encode(cmd);
 		if (code.op != RLE_OP_INVALID)
-			printf("0x%02x", code.cnt);
+			wp += snprintf(buf + wp, len - 1 - wp, "0x%02x", code.cnt);
 		else
-			printf("-1");
+			wp += snprintf(buf + wp, len - 1 - wp, "-1");
 	}
-	printf(" },\n");
+	wp += snprintf(buf + wp, len - 1 - wp, " },");
 
-	printf("\t// RLE_OP_REP 0..%d\n", max_len - 1);
-	printf("\t{ ");
-	for (int i=0 ; i < max_len ; ++i) {
-		if (i > 0) printf(", ");
-		struct rle8 cmd = { RLE_OP_REP, i };
-		struct rle8 code = p->rle8_encode(cmd);
-		if (code.op != RLE_OP_INVALID)
-			printf("0x%02x", code.cnt);
-		else
-			printf("-1");
-	}
-	printf(" },\n");
-
-	printf("\t// RLE_OP_LIT 0..%d\n", max_len - 1);
-	printf("\t{ ");
-	for (int i=0 ; i < max_len ; ++i) {
-		if (i > 0) printf(", ");
-		struct rle8 cmd = { RLE_OP_LIT, i };
-		struct rle8 code = p->rle8_encode(cmd);
-		if (code.op != RLE_OP_INVALID)
-			printf("0x%02x", code.cnt);
-		else
-			printf("-1");
-	}
-	printf(" },");
-
-	printf("\n};\n");
+	return wp;
 }
 
-static void rle8_generate_table(struct rle_parser *p) {
+static void rle8_generate_encode_table(struct rle_parser *p) {
 	// TODO: This should be autodetected by max of valid CPY/REP/LIT encoding, rest padded to -1
 	int max_len = 256;
 
@@ -330,28 +305,37 @@ static void rle8_generate_table(struct rle_parser *p) {
 		op_usage[cmd.op]++;
 	}
 
-	char buf[1024];
+	char buf[2048];
 	int wp = 0;
 	for (int i = RLE_OP_CPY ; i < RLE_OP_INVALID ; ++i) {
 		if (op_usage[i] > 0) {
-			wp += snprintf(buf + wp, sizeof(buf) - 1 - wp, "%sRLE_OP_%s /* %d */", wp == 0 ? "" : " | ", rle_op_cstr(i), op_usage[i]);
+			wp += snprintf(buf + wp, sizeof(buf) - 1 - wp, "%s(1U << RLE_OP_%s) /* %d */", wp == 0 ? "" : " | ", rle_op_cstr(i), op_usage[i]);
 		}
 	}
 
 	printf("\nstatic struct rle8_tbl rle8_table_%s = {\n", p->name);
 	printf("\t\"%s\",\n", p->name);
 	printf("\t%s,\n", buf); // enum RLE_OP op_used;
-	printf("\t%d,\n", max_len);
+	// SKIP FOR NOW printf("\t%d,\n", max_len);
 	printf("\t{\n");
-	printf("\t\t&rle8_tbl_encode_%s[RLE_OP_CPY][0],\n", p->name);
-	printf("\t\t&rle8_tbl_encode_%s[RLE_OP_REP][0],\n", p->name);
-	printf("\t\t&rle8_tbl_encode_%s[RLE_OP_LIT][0],\n", p->name);
+	for (int i = RLE_OP_CPY ; i < RLE_OP_NOP ; ++i) {
+		if (op_usage[i] > 0) {
+			rle8_generate_op_encode_array(p, i, buf, sizeof(buf));
+			printf("%s\n", buf);
+		} else {
+			printf("\t\tNULL,\n");
+		}
+	}
 	printf("\t},\n");
 	printf("\trle8_tbl_decode_%s,\n", p->name);
 	printf("\t{\n");
-	printf("\t\t{ %d, %d },\n", minmax[RLE_OP_CPY][0], minmax[RLE_OP_CPY][1]);
-	printf("\t\t{ %d, %d },\n", minmax[RLE_OP_REP][0], minmax[RLE_OP_REP][1]);
-	printf("\t\t{ %d, %d },\n", minmax[RLE_OP_LIT][0], minmax[RLE_OP_LIT][1]);
+	for (int i = RLE_OP_CPY ; i < RLE_OP_NOP ; ++i) {
+		if (op_usage[i] > 0) {
+			printf("\t\t{ %d, %d }, // min-max %s\n", minmax[i][0], minmax[i][1], rle_op_cstr(i));
+		} else {
+			printf("\t\t{ -1, -1 }, // no %s\n", rle_op_cstr(i));
+		}
+	}
 	printf("\t}\n};\n");
 
 };
@@ -360,8 +344,7 @@ static void rle8_generate_c_tables(struct rle_parser *p) {
 	printf("%s", gen_header);
 
 	rle8_generate_decode_table(p);
-	rle8_generate_encode_tables(p);
-	rle8_generate_table(p);
+	rle8_generate_encode_table(p);
 }
 
 struct rle_parser parsers[] = {
