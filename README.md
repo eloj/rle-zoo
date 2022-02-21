@@ -63,7 +63,7 @@ Currently the following extraordinary specimens are grazing the fertile grounds 
 | [Packbits](#packbits) | CPY | Near-optimal | 2 - 128 | 1 - 128 | ref[^foottn1023] | One code (0x80) wasted on NOP. |
 | [Goldbox](#goldbox) | CPY | Sub-optimal | 1 - 127 | 1 - 126 | n/a |  Used by [SSI Goldbox](https://en.wikipedia.org/wiki/Gold_Box) titles. Many quirks. |
 | [PCX](#pcx) | LIT | Sub-optimal | 0 - 63 | 0 - 191 | [link](http://bespin.org/~qz/pc-gpe/pcx.txt) | |
-| [Apple ICNS](#apple-icns) | CPY | Optimal | 3 - 130 | 1 - 128 | n/a | |
+| [Apple ICNS](#apple-icns) | CPY | Optimal | 3 - 130 | 1 - 128 | [ref](https://en.wikipedia.org/wiki/Apple_Icon_Image_format#Compression) | |
 
 ### PackBits
 
@@ -188,8 +188,15 @@ Use by Apple to compress icon resources.
 * CPY: If high-bit is clear, then `OP + 1` literal bytes follow.
 * REP: If high-bit is set, then repeat next byte `OP - 125` times.
 
+Unlike many other variants, this one makes efficient use of the code space and doesn't include any `NOP` operation,
+or overlapping ways to output one character. The `CPY` OPs (0x00-0x7f) are the same as in packbits, but the `REP` OPs (0x80-)
+have been adjusted up to a minimum count of three. They also come in ascending order compared with packbits; more characters
+are copied as the OP increase in value, versus fewer in packbits.
+
 ## TODO
 
+* Add 'all' variant compression reporting to `rle-zoo`
+* Make the `rle-parse` encoder follow limits/correct.
 * Add more animals. Potential candidates: BMP(?), TGA, ...
 * Improve `rle-zoo` to behave more like a standard UNIX filter.
 
