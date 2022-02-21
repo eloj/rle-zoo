@@ -12,13 +12,10 @@
 #include <stdbool.h>
 #include <err.h>
 
-#define RLE_ZOO_GOLDBOX_IMPLEMENTATION
+#define RLE_ZOO_IMPLEMENTATION
 #include "rle_goldbox.h"
-#define RLE_ZOO_PACKBITS_IMPLEMENTATION
 #include "rle_packbits.h"
-#define RLE_ZOO_PCX_IMPLEMENTATION
 #include "rle_pcx.h"
-#define RLE_ZOO_ICNS_IMPLEMENTATION
 #include "rle_icns.h"
 
 // TODO: Variant selection code + tables can be shared.
