@@ -116,8 +116,15 @@ static int roundtrip(struct rle_t *rle, struct test *te, uint8_t *inbuf, size_t 
 		fprint_hex(stdout, te->input, te->len, 32, "\n", hex_show_offset);
 		fflush(stdout);
 		printf("\n");
-		printf("got:\n");
-		fprint_hex(stdout, tmp_buf, res, 32, "\n", hex_show_offset);
+		printf("got");
+		if (res <= 0) {
+			fprintf(stdout, " error: %zd -- buffer length unknown!\n", res);
+			fprint_hex(stdout, tmp_buf, te->len, 32, "\n", hex_show_offset);
+			fprintf(stdout, " ...<truncated>");
+		} else {
+			fprintf(stdout, " %zu bytes:\n", res);
+			fprint_hex(stdout, tmp_buf, res, 32, "\n", hex_show_offset);
+		}
 		fflush(stdout);
 		printf("\n");
 	} else {
@@ -191,7 +198,12 @@ static int run_rle_test(struct rle_t *rle, struct test *te, const char *filename
 			}
 
 			if ((debug && retval != 0) || hex_always) {
-				fprint_hex(stdout, tmp_buf, res, 32, "\n", hex_show_offset); printf("\n");
+				if (res < 0) {
+					fprintf(stdout, "error: %zd -- hexdump unavailable, buffer length unknown!", res);
+				} else {
+					fprint_hex(stdout, tmp_buf, res, 32, "\n", hex_show_offset);
+				}
+				printf("\n");
 				fflush(stdout);
 			}
 		} else {
@@ -242,7 +254,12 @@ static int run_rle_test(struct rle_t *rle, struct test *te, const char *filename
 			}
 
 			if ((debug && retval != 0) || hex_always) {
-				fprint_hex(stdout, tmp_buf, res, 32, "\n", hex_show_offset); printf("\n");
+				if (res < 0) {
+					fprintf(stdout, "error: %zd -- hexdump unavailable, buffer length unknown!", res);
+				} else {
+					fprint_hex(stdout, tmp_buf, res, 32, "\n", hex_show_offset);
+				}
+				printf("\n");
 				fflush(stdout);
 			}
 		} else {
