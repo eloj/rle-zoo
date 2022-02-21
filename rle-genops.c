@@ -33,20 +33,7 @@ struct rle_parser {
 	rle8_decode_fp rle8_decode;
 };
 
-// NOTE: The order and value of these matter.
-enum RLE_OP {
-	RLE_OP_CPY,
-	RLE_OP_REP,
-	RLE_OP_LIT,
-	RLE_OP_NOP,
-	RLE_OP_INVALID,
-};
-
-struct rle8 {
-	enum RLE_OP op;
-	uint8_t cnt; // TODO: rename to 'arg'?
-};
-
+// should also go into parse utils..
 static const char *rle_op_cstr(enum RLE_OP op) {
 	const char *res = "UNKNOWN";
 	switch (op) {

@@ -412,15 +412,70 @@ static int test_buf_printf(void) {
 	return fails;
 }
 
+static int test_parse_rle(void) {
+	const char *testname = "parse_rle";
+	size_t fails = 0;
+
+	struct rle8_params icns_params = { 1, 8, 3, 10 };
+
+	struct parse_test {
+		const char *input;
+		struct rle8 res;
+	} tests[] = {
+		{ "",     { RLE_OP_CPY, 0 } },
+		{ "a",    { RLE_OP_CPY, 1 } },
+		{ "aB",   { RLE_OP_CPY, 2 } },
+		{ "aBB",  {	RLE_OP_CPY, 3 } },
+		{ "aBBB", {	RLE_OP_CPY, 1 } },
+		{ "aa",   { RLE_OP_CPY, 2 } },
+		{ "aaB",  { RLE_OP_CPY, 3 } },
+		{ "aaBB", { RLE_OP_CPY, 4 } },
+		{ "aaBBB",{ RLE_OP_CPY, 2 } },
+		{ "aaa",  { RLE_OP_REP, 3 } },
+		{ "aaaB", { RLE_OP_REP, 3 } },
+		{ "aaBBaaBBaa", { RLE_OP_CPY, 8 } },
+		{ "aaaaaaaaaa", { RLE_OP_REP, 10 } },
+	};
+
+	size_t num_tests = sizeof(tests)/sizeof(tests[0]);
+
+	for (size_t i = 0 ; i < num_tests ; ++i) {
+		struct parse_test *test = &tests[i];
+
+		struct rle8 res = parse_rle((const uint8_t*)test->input, strlen(test->input), &icns_params);
+
+		if (test->res.op != res.op || test->res.cnt != res.cnt) {
+			TEST_ERRMSG("unexpected return-value, expected '{%d,%d}', got '{%d,%d}'.",
+				test->res.op, test->res.cnt,
+				res.op, res.cnt
+			);
+			++fails;
+			continue;
+		} else {
+			// printf("<PASSED!>\n");
+		}
+	}
+
+	if (fails == 0) {
+		printf("Suite '%s' passed " GREEN "OK" NC "\n", testname);
+	} else {
+		printf("%zu of %zu tests failed.\n", fails, num_tests);
+	}
+
+	return fails;
+}
 
 int main(void) {
 	size_t failed = 0;
 
+	failed += test_parse_rle();
+#if 0
 	failed += test_expand_escapes();
 	failed += test_parse_ofs_len();
 	failed += test_buf_printf();
 	failed += test_rep();
 	failed += test_cpy();
+#endif
 
 	if (failed != 0) {
 		printf("Tests " RED "FAILED" NC "\n");

@@ -23,20 +23,6 @@
 
 #define BUF_SIZE (1024*1024)
 
-// COPIED FROM GENOPS FOR NOW.
-enum RLE_OP {
-	RLE_OP_CPY,
-	RLE_OP_REP,
-	RLE_OP_LIT,
-	RLE_OP_NOP,
-	RLE_OP_INVALID,
-};
-
-struct rle8 {
-	enum RLE_OP op;
-	uint8_t cnt;
-};
-
 struct rle8_tbl {
 	const char *name;
 	enum RLE_OP op_used;
@@ -99,7 +85,8 @@ static size_t rle_count_cpy(const uint8_t* src, size_t len, size_t max) {
 	return cnt;
 }
 
-static int rle_parse_encode(struct rle8_tbl *rle, const uint8_t *src, size_t slen) {
+#if 0
+static int rle_parse_encode_old(struct rle8_tbl *rle, const uint8_t *src, size_t slen) {
 	printf("Encoding %zu byte buffer with '%s'\n", slen, rle->name);
 	size_t rp = 0;
 	size_t wp = 0;
@@ -141,6 +128,69 @@ static int rle_parse_encode(struct rle8_tbl *rle, const uint8_t *src, size_t sle
 			printf("Encode stalled, bailing.\n");
 			return -3;
 		}
+	}
+
+	printf("rp=%zu, wp=%zu\n", rp, wp);
+
+	return 0;
+}
+#endif
+
+static int rle_parse_encode(struct rle8_tbl *rle, const uint8_t *src, size_t slen) {
+	printf("Encoding %zu byte buffer with '%s'\n", slen, rle->name);
+	size_t rp = 0;
+	size_t wp = 0;
+	size_t bailout = 8192;
+
+	struct rle8_params params = {
+		rle->minmax_op[RLE_OP_CPY][0],
+		rle->minmax_op[RLE_OP_CPY][1],
+		rle->minmax_op[RLE_OP_REP][0],
+		rle->minmax_op[RLE_OP_REP][1],
+	};
+
+	printf("Encode params = { cpy:{ %d, %d }, rep:{%d, %d} }\n", params.min_cpy, params.max_cpy, params.min_rep, params.max_rep);
+
+	if (rle->op_used & (1UL << RLE_OP_LIT)) {
+		printf("Unsupported encode table -- LIT scanning support not yet implemented.\n");
+		return 0;
+	}
+
+	while (rp < slen) {
+		struct rle8 res = parse_rle(src + rp, slen - rp, &params);
+
+		if (--bailout == 0) {
+			printf("Encode stalled, bailing.\n");
+			return -3;
+		}
+
+		if (res.op == RLE_OP_REP) {
+			int op = rle->encode_tbl[RLE_OP_REP][res.cnt];
+			assert(op > -1);
+			printf("<%02X> REP '%c' %d\n", op, src[rp], res.cnt);
+			rp += res.cnt;
+			wp += 2;
+			continue;
+		}
+
+		if (res.op == RLE_OP_CPY) {
+			int op = rle->encode_tbl[RLE_OP_CPY][res.cnt];
+			assert(op > -1);
+			printf("<%02X> CPY %d\n", op, res.cnt);
+			rp += res.cnt;
+			wp += res.cnt + 1;
+			continue;
+		}
+
+		if (res.op == RLE_OP_LIT) {
+			int op = rle->encode_tbl[RLE_OP_LIT][res.cnt];
+			assert(op > -1);
+			printf("<%02X> LIT %d\n", op, res.cnt);
+			rp += res.cnt;
+			wp += res.cnt;
+			continue;
+		}
+
 	}
 
 	printf("rp=%zu, wp=%zu\n", rp, wp);
@@ -235,7 +285,7 @@ int main(int argc, char *argv []) {
 		exit(1);
 	}
 
-	struct rle8_tbl *rle = &rle8_table_packbits;
+	struct rle8_tbl *rle = &rle8_table_icns;
 	if (arg_encode == 1) {
 		rle_parse_encode(rle, buf, p_len);
 	} else if (arg_encode == 2) {
