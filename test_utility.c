@@ -352,11 +352,56 @@ static int test_parse_ofs_len(void) {
 
 	return fails;
 }
+
+static int test_mybufcat(void) {
+	const char *testname = "mybufcat";
+	size_t fails = 0;
+	size_t i = 0;
+
+	char buf[128];
+	size_t wp = 0;
+	size_t res;
+
+	res = mybufcat(buf, 8, &wp, "This buffer is %zd bytes", sizeof(buf));
+	if (res != 0) {
+		TEST_ERRMSG("Undersized buffer, expected res '0', got '%zu'.", res);
+		++fails;
+	}
+	if (wp != 0) {
+		TEST_ERRMSG("Undersized buffer, expected wp '0', got '%zu'.", wp);
+		++fails;
+	}
+
+	wp = 0;
+	res = mybufcat(buf, sizeof(buf), &wp, "This buffer is %zd bytes", sizeof(buf));
+	if (res != 24) {
+		TEST_ERRMSG("Correctly sized buffer, expected '24', got '%zu'.", res);
+		++fails;
+	}
+	if (wp != 24) {
+		TEST_ERRMSG("Correctly sized buffer, expected wp '24', got '%zu'.", wp);
+		++fails;
+	}
+
+	if (memcmp(buf, "This buffer is 128 bytes", 24) != 0) {
+		TEST_ERRMSG("Buffer contents failed, got '%s'.", buf);
+		++fails;
+	}
+
+	if (fails == 0) {
+		printf("Suite '%s' passed " GREEN "OK" NC "\n", testname);
+	}
+
+	return fails;
+}
+
+
 int main(void) {
 	size_t failed = 0;
 
 	failed += test_expand_escapes();
 	failed += test_parse_ofs_len();
+	failed += test_mybufcat();
 	failed += test_rep();
 	failed += test_cpy();
 

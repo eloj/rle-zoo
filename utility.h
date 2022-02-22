@@ -17,12 +17,15 @@ extern "C" {
 #include <unistd.h>
 #include <errno.h>
 #include <limits.h>
+#include <stdarg.h>
 
 void fprint_hex(FILE *stream, const uint8_t *data, size_t len, int width, const char *indent, int show_offset);
 
 int parse_ofs_len(const char *in, ssize_t *at_ofs, ssize_t *at_len);
 
 size_t expand_escapes(const char *input, size_t slen, char *dest, size_t dlen, int *err);
+
+size_t mybufcat(char *buf, size_t bufsize, size_t *wp, const char *format, ...);
 
 #ifdef UTILITY_IMPLEMENTATION
 #include <assert.h>
@@ -182,6 +185,31 @@ size_t expand_escapes(const char *input, size_t slen, char *dest, size_t dlen, i
 		*err = 0;
 	return wp;
 #undef RETURN_ERR
+}
+
+// Helper for safe but slow string concatenation.
+// Returns bytes written, updates wp to next write position.
+size_t mybufcat(char *buf, size_t bufsize, size_t *wp, const char *format, ...) {
+	size_t written = 0;
+
+	ssize_t left = (ssize_t)(bufsize - *wp - 1);
+
+	if (left > 0 && buf && format) {
+		va_list args;
+		va_start(args, format);
+		int req = vsnprintf(NULL, 0, format, args);
+		va_end(args);
+
+		if (req < left) {
+			va_start(args, format);
+			written = vsnprintf(buf + *wp, left, format, args);
+			va_end(args);
+
+			*wp += written;
+		}
+	}
+
+	return written;
 }
 
 #endif

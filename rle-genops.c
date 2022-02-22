@@ -5,7 +5,6 @@
 	See https://github.com/eloj/rle-zoo
 
 	TODO:
-		Add flag field to indicate use of RLE_REP, RLE_CPY, RLE_LIT...
 		Use bitmap to mark off used RLE_OPS, then bit ops can detect
 			missing or ambigious encodings.
 		Output necessary types or include-file when --genc
@@ -13,9 +12,13 @@
 */
 #include <stdio.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <assert.h>
 #include <string.h>
 #include <limits.h>
+
+#define UTILITY_IMPLEMENTATION
+#include "utility.h"
 
 typedef struct rle8 (*rle8_decode_fp)(uint8_t input);
 typedef struct rle8 (*rle8_encode_fp)(struct rle8 cmd);
@@ -253,26 +256,30 @@ static void rle8_generate_decode_table(struct rle_parser *p) {
 	printf("\n};\n");
 }
 
-static size_t rle8_generate_op_encode_array(struct rle_parser *p, int OP, char *buf, size_t len) {
 
+static size_t rle8_generate_op_encode_array(struct rle_parser *p, int OP, char *buf, size_t bufsize) {
 	// TODO: This should be autodetected by max of valid CPY/REP/LIT encoding, rest padded to -1
 	int max_len = 256;
 
 	size_t wp = 0;
-	wp += snprintf(buf + wp, len - 1 - wp, "\t\t// RLE_OP_%s 0..%d\n", rle_op_cstr(OP), max_len - 1);
-	wp += snprintf(buf + wp, len - 1 - wp, "\t\t(int16_t[]){ ");
+	mybufcat(buf, bufsize, &wp, "\t\t// RLE_OP_%s 0..%d\n", rle_op_cstr(OP), max_len - 1);
+	mybufcat(buf, bufsize, &wp, "\t\t(int16_t[]){ ");
 
 	for (int i=0 ; i < max_len ; ++i) {
 		if (i > 0)
-			wp += snprintf(buf + wp, len - 1 - wp, ",");
+			mybufcat(buf, bufsize, &wp, ",");
 		struct rle8 cmd = { OP, i };
 		struct rle8 code = p->rle8_encode(cmd);
 		if (code.op != RLE_OP_INVALID)
-			wp += snprintf(buf + wp, len - 1 - wp, "0x%02x", code.cnt);
+			mybufcat(buf, bufsize, &wp, "0x%02x", code.cnt);
 		else
-			wp += snprintf(buf + wp, len - 1 - wp, "-1");
+			mybufcat(buf, bufsize, &wp, "-1");
 	}
-	wp += snprintf(buf + wp, len - 1 - wp, " },");
+
+	if (mybufcat(buf, bufsize, &wp, " },") == 0) {
+		fprintf(stderr, "INTERNAL ERROR: Buffer truncation detected -- output invalid!\n");
+		exit(1);
+	}
 
 	return wp;
 }
@@ -305,11 +312,11 @@ static void rle8_generate_encode_table(struct rle_parser *p) {
 		op_usage[cmd.op]++;
 	}
 
-	char buf[2048];
-	int wp = 0;
+	char buf[2048] = {};
+	size_t wp = 0;
 	for (int i = RLE_OP_CPY ; i < RLE_OP_INVALID ; ++i) {
 		if (op_usage[i] > 0) {
-			wp += snprintf(buf + wp, sizeof(buf) - 1 - wp, "%s(1U << RLE_OP_%s) /* %d */", wp == 0 ? "" : " | ", rle_op_cstr(i), op_usage[i]);
+			mybufcat(buf, sizeof(buf) - 1, &wp, "%s(1U << RLE_OP_%s) /* %d */", wp == 0 ? "" : " | ", rle_op_cstr(i), op_usage[i]);
 		}
 	}
 
@@ -320,7 +327,7 @@ static void rle8_generate_encode_table(struct rle_parser *p) {
 	printf("\t{\n");
 	for (int i = RLE_OP_CPY ; i < RLE_OP_NOP ; ++i) {
 		if (op_usage[i] > 0) {
-			rle8_generate_op_encode_array(p, i, buf, sizeof(buf));
+			rle8_generate_op_encode_array(p, i, buf, sizeof(buf) - 1);
 			printf("%s\n", buf);
 		} else {
 			printf("\t\tNULL,\n");
@@ -479,5 +486,5 @@ int main(int argc, char *argv[]) {
 	else
 		rle8_display_ops(p);
 
-	return 0;
+	return EXIT_SUCCESS;
 }
