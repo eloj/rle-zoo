@@ -25,7 +25,7 @@ int parse_ofs_len(const char *in, ssize_t *at_ofs, ssize_t *at_len);
 
 size_t expand_escapes(const char *input, size_t slen, char *dest, size_t dlen, int *err);
 
-size_t mybufcat(char *buf, size_t bufsize, size_t *wp, const char *format, ...);
+size_t buf_printf(char *buf, size_t bufsize, size_t *wp, int *truncated, const char *format, ...);
 
 #ifdef UTILITY_IMPLEMENTATION
 #include <assert.h>
@@ -187,26 +187,28 @@ size_t expand_escapes(const char *input, size_t slen, char *dest, size_t dlen, i
 #undef RETURN_ERR
 }
 
-// Helper for safe but slow string concatenation.
-// Returns bytes written, updates wp to next write position.
-size_t mybufcat(char *buf, size_t bufsize, size_t *wp, const char *format, ...) {
+// Helper for safe but slow string concatenation. Result is always zero-terminated.
+// Returns bytes actually written, updates wp to next write position.
+size_t buf_printf(char *buf, size_t bufsize, size_t *wp, int *truncated, const char *format, ...) {
 	size_t written = 0;
+	int left = 0;
 
-	ssize_t left = (ssize_t)(bufsize - *wp - 1);
-
-	if (left > 0 && buf && format) {
+	if (!__builtin_sub_overflow(bufsize, *wp, &left) && left > 0) {
 		va_list args;
 		va_start(args, format);
-		int req = vsnprintf(NULL, 0, format, args);
+		int res = vsnprintf(buf + *wp, left, format, args);
 		va_end(args);
-
-		if (req < left) {
-			va_start(args, format);
-			written = vsnprintf(buf + *wp, left, format, args);
-			va_end(args);
-
-			*wp += written;
+		if (res >= 0) {
+			if (res >= left) {
+				// Output was truncated, return actual number of bytes written.
+				res = left;
+				if (truncated)
+					*truncated = 1;
+			}
+			written = res;
 		}
+		// No overflow check here.
+		*wp += written;
 	}
 
 	return written;

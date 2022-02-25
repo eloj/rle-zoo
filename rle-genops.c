@@ -262,21 +262,24 @@ static size_t rle8_generate_op_encode_array(struct rle_parser *p, int OP, char *
 	int max_len = 256;
 
 	size_t wp = 0;
-	mybufcat(buf, bufsize, &wp, "\t\t// RLE_OP_%s 0..%d\n", rle_op_cstr(OP), max_len - 1);
-	mybufcat(buf, bufsize, &wp, "\t\t(int16_t[]){ ");
+	int tr = 0;
+	buf_printf(buf, bufsize, &wp, &tr, "\t\t// RLE_OP_%s 0..%d\n", rle_op_cstr(OP), max_len - 1);
+	buf_printf(buf, bufsize, &wp, &tr, "\t\t(int16_t[]){ ");
 
 	for (int i=0 ; i < max_len ; ++i) {
 		if (i > 0)
-			mybufcat(buf, bufsize, &wp, ",");
+			buf_printf(buf, bufsize, &wp, &tr, ",");
 		struct rle8 cmd = { OP, i };
 		struct rle8 code = p->rle8_encode(cmd);
 		if (code.op != RLE_OP_INVALID)
-			mybufcat(buf, bufsize, &wp, "0x%02x", code.cnt);
+			buf_printf(buf, bufsize, &wp, &tr, "0x%02x", code.cnt);
 		else
-			mybufcat(buf, bufsize, &wp, "-1");
+			buf_printf(buf, bufsize, &wp, &tr, "-1");
 	}
 
-	if (mybufcat(buf, bufsize, &wp, " },") == 0) {
+	buf_printf(buf, bufsize, &wp, &tr, " },");
+
+	if (tr) {
 		fprintf(stderr, "INTERNAL ERROR: Buffer truncation detected -- output invalid!\n");
 		exit(1);
 	}
@@ -312,11 +315,11 @@ static void rle8_generate_encode_table(struct rle_parser *p) {
 		op_usage[cmd.op]++;
 	}
 
-	char buf[2048] = {};
+	char buf[1024+256] = {};
 	size_t wp = 0;
 	for (int i = RLE_OP_CPY ; i < RLE_OP_INVALID ; ++i) {
 		if (op_usage[i] > 0) {
-			mybufcat(buf, sizeof(buf) - 1, &wp, "%s(1U << RLE_OP_%s) /* %d */", wp == 0 ? "" : " | ", rle_op_cstr(i), op_usage[i]);
+			buf_printf(buf, sizeof(buf), &wp, NULL, "%s(1U << RLE_OP_%s) /* %d */", wp == 0 ? "" : " | ", rle_op_cstr(i), op_usage[i]);
 		}
 	}
 
@@ -327,7 +330,7 @@ static void rle8_generate_encode_table(struct rle_parser *p) {
 	printf("\t{\n");
 	for (int i = RLE_OP_CPY ; i < RLE_OP_NOP ; ++i) {
 		if (op_usage[i] > 0) {
-			rle8_generate_op_encode_array(p, i, buf, sizeof(buf) - 1);
+			rle8_generate_op_encode_array(p, i, buf, sizeof(buf));
 			printf("%s\n", buf);
 		} else {
 			printf("\t\tNULL,\n");

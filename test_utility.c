@@ -353,27 +353,37 @@ static int test_parse_ofs_len(void) {
 	return fails;
 }
 
-static int test_mybufcat(void) {
-	const char *testname = "mybufcat";
+static int test_buf_printf(void) {
+	const char *testname = "buf_printf";
 	size_t fails = 0;
 	size_t i = 0;
 
 	char buf[128];
 	size_t wp = 0;
 	size_t res;
+	int tr = 0;
 
-	res = mybufcat(buf, 8, &wp, "This buffer is %zd bytes", sizeof(buf));
-	if (res != 0) {
-		TEST_ERRMSG("Undersized buffer, expected res '0', got '%zu'.", res);
+	buf[7] = 1;
+	res = buf_printf(buf, 8, &wp, &tr, "This buffer is %zd bytes", sizeof(buf));
+	if (res != 8) {
+		TEST_ERRMSG("Undersized buffer, expected res '%zu', got '%zu'.", (size_t)8, res);
 		++fails;
 	}
-	if (wp != 0) {
-		TEST_ERRMSG("Undersized buffer, expected wp '0', got '%zu'.", wp);
+	if (wp != 8) {
+		TEST_ERRMSG("Undersized buffer, expected wp '%zu', got '%zu'.", (size_t)8, wp);
+		++fails;
+	}
+	if (!tr) {
+		TEST_ERRMSG("Undersized buffer, expected truncation flag set, got '%d'.", tr);
+		++fails;
+	}
+	if (buf[7] != 0) {
+		TEST_ERRMSG("Undersized buffer, expected zero termination not detected!");
 		++fails;
 	}
 
 	wp = 0;
-	res = mybufcat(buf, sizeof(buf), &wp, "This buffer is %zd bytes", sizeof(buf));
+	res = buf_printf(buf, sizeof(buf), &wp, NULL, "This buffer is %zd bytes", sizeof(buf));
 	if (res != 24) {
 		TEST_ERRMSG("Correctly sized buffer, expected '24', got '%zu'.", res);
 		++fails;
@@ -385,6 +395,13 @@ static int test_mybufcat(void) {
 
 	if (memcmp(buf, "This buffer is 128 bytes", 24) != 0) {
 		TEST_ERRMSG("Buffer contents failed, got '%s'.", buf);
+		++fails;
+	}
+
+	wp = -sizeof(buf); // Test write-point under/overflow
+	res = buf_printf(buf, sizeof(buf), &wp, NULL, "This buffer is %zd bytes", sizeof(buf));
+	if (res != 0) {
+		TEST_ERRMSG("Write offset beyond input buffer NOT detected!");
 		++fails;
 	}
 
@@ -401,7 +418,7 @@ int main(void) {
 
 	failed += test_expand_escapes();
 	failed += test_parse_ofs_len();
-	failed += test_mybufcat();
+	failed += test_buf_printf();
 	failed += test_rep();
 	failed += test_cpy();
 
