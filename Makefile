@@ -39,7 +39,7 @@ all: tools tests
 
 tools: rle-zoo rle-genops rle-parser
 
-tests: test_rle test_utility
+tests: test_rle test_parse test_utility
 
 rle-zoo: rle-zoo.c $(RLE_VARIANT_HEADERS)
 	$(CC) $(CFLAGS) $< $(filter %.o, $^) -o $@
@@ -56,14 +56,18 @@ test_rle: test_rle.c $(RLE_VARIANT_HEADERS) utility.h
 test_utility: test_utility.c utility.h
 	$(CC) $(CFLAGS) $< $(filter %.o, $^) -o $@
 
+test_parse: test_parse.c rle-parse.h
+	$(CC) $(CFLAGS) $< $(filter %.o, $^) -o $@
+
 test_example: test_example.c rle_packbits.h
 	$(CC) $(CFLAGS) $< $(filter %.o, $^) -o $@
 
 test_includeall: test_includeall.c $(RLE_VARIANT_HEADERS)
 	$(CC) $(CFLAGS) $(STRICT_FLAGS) test_includeall.c -o $@
 
-test: test_rle test_utility test_example
+test: tests test_example
 	$(TEST_PREFIX) ./test_utility
+	$(TEST_PREFIX) ./test_parse
 	$(TEST_PREFIX) ./test_rle
 
 .c.o:
@@ -87,4 +91,4 @@ backup:
 
 clean:
 	@echo -e $(YELLOW)Cleaning$(NC)
-	rm -f rle-zoo rle-genops rle-parser test_rle test_utility test_example test_includeall afl-driver $(RLE_VARIANT_OPS_HEADERS) vgcore.* core.* *.gcda
+	rm -f rle-zoo rle-genops rle-parser test_rle test_utility test_parse test_example test_includeall afl-driver $(RLE_VARIANT_OPS_HEADERS) vgcore.* core.* *.gcda

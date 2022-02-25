@@ -5,6 +5,7 @@
 	See https://github.com/eloj/rle-zoo
 
 	TODO:
+		Just give up and use getopt.h
 		Take optional offset, length args
 		Take debug flag to output ops.
 		Log count + ratios of ops, and CPY->REP and REP->CPY transitions.
@@ -13,6 +14,8 @@
 */
 #define UTILITY_IMPLEMENTATION
 #include "utility.h"
+#define RLE_PARSE_IMPLEMENTATION
+#include "rle-parse.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -22,36 +25,6 @@
 #include <stdbool.h>
 
 #define BUF_SIZE (1024*1024)
-
-struct rle8_tbl {
-	const char *name;
-	enum RLE_OP op_used;
-	const int16_t *encode_tbl[3];
-	const struct rle8 *decode_tbl;
-	const size_t minmax_op[3][2];
-};
-
-static const char *rle_op_cstr(enum RLE_OP op) {
-	const char *res = "UNKNOWN";
-	switch (op) {
-		case RLE_OP_CPY:
-			res = "CPY";
-			break;
-		case RLE_OP_REP:
-			res = "REP";
-			break;
-		case RLE_OP_LIT:
-			res = "LIT";
-			break;
-		case RLE_OP_NOP:
-			res = "NOP";
-			break;
-		case RLE_OP_INVALID:
-			res = "INVALID";
-			break;
-	}
-	return res;
-}
 
 #include "ops-packbits.h"
 #include "ops-goldbox.h"
@@ -67,74 +40,6 @@ static struct rle8_tbl* rle8_variants[] = {
 
 static int debug_print = 1;
 static int debug_hex = 1;
-
-// Count the number of repeated characters in the buffer `src` of length `len`, up to the maximum `max`.
-// The count is inclusive; for any non-zero length input there's at least one repeated character.
-static size_t rle_count_rep(const uint8_t* src, size_t len, size_t max) {
-	size_t cnt = 0;
-	if (len && max) {
-		do { ++cnt; } while ((cnt + 1 <= len) && (cnt < max) && (src[cnt-1] == src[cnt]));
-	}
-	return cnt;
-}
-
-// Count the number of non-repeated characters in the buffer `src` of length `len`, up to the maximum `max`.
-static size_t rle_count_cpy(const uint8_t* src, size_t len, size_t max) {
-	size_t cnt = 0;
-	while ((cnt + 1 <= len) && (cnt < max) && ((cnt + 1 == len) || (src[cnt] != src[cnt+1]))) { ++cnt; };
-	return cnt;
-}
-
-#if 0
-static int rle_parse_encode_old(struct rle8_tbl *rle, const uint8_t *src, size_t slen) {
-	printf("Encoding %zu byte buffer with '%s'\n", slen, rle->name);
-	size_t rp = 0;
-	size_t wp = 0;
-	size_t bailout = 8192;
-
-	size_t min_rep = rle->minmax_op[RLE_OP_REP][0];
-	size_t max_rep = rle->minmax_op[RLE_OP_REP][1];
-	size_t min_cpy = rle->minmax_op[RLE_OP_CPY][0];
-	size_t max_cpy = rle->minmax_op[RLE_OP_CPY][1];
-
-	while (rp < slen) {
-		uint8_t cnt = rle_count_rep(src + rp, slen - rp, max_rep);
-		if (cnt >= min_rep) {
-			// assert(cnt < rle->encode_tbl_len); // TODO: FIXME!
-			// Output RLE_OP_REP <cnt>
-			int op = rle->encode_tbl[RLE_OP_REP][cnt];
-			assert(op > -1);
-			printf("<%02X> REP '%c' %d\n", op, src[rp], cnt);
-			rp += cnt;
-			wp += 2;
-			continue;
-		}
-
-		cnt = rle_count_cpy(src + rp, slen - rp, max_cpy);
-		if (cnt >= min_cpy) {
-			// assert(cnt < rle->encode_tbl_len); // TODO: FIXME!
-			// Output RLE_OP_CNT <cnt>
-			int op = rle->encode_tbl[RLE_OP_CPY][cnt];
-			assert(op > -1);
-			printf("<%02X> CPY %d\n", op, cnt);
-			rp += cnt;
-			wp += cnt + 1;
-		} else {
-			printf("MIN CPY FAIL -- Don't know how to make progress.\n");
-			return -2;
-		}
-
-		if (--bailout == 0) {
-			printf("Encode stalled, bailing.\n");
-			return -3;
-		}
-	}
-
-	printf("rp=%zu, wp=%zu\n", rp, wp);
-
-	return 0;
-}
-#endif
 
 static int rle_parse_encode(struct rle8_tbl *rle, const uint8_t *src, size_t slen) {
 	printf("Encoding %zu byte buffer with '%s'\n", slen, rle->name);
@@ -190,7 +95,7 @@ static int rle_parse_encode(struct rle8_tbl *rle, const uint8_t *src, size_t sle
 			wp += res.cnt;
 			continue;
 		}
-
+		assert(0 && "Invalid operation returned from parse_rle.");
 	}
 
 	printf("rp=%zu, wp=%zu\n", rp, wp);
@@ -241,7 +146,7 @@ static int rle_parse_decode(struct rle8_tbl *rle, const uint8_t *data, size_t le
 		}
 
 		if (--bailout == 0) {
-			printf("Parse stalled, bailing.\n");
+			printf("Decode stalled, bailing.\n");
 			return -3;
 		}
 	}

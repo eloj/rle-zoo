@@ -19,6 +19,14 @@ extern "C" {
 #include <limits.h>
 #include <stdarg.h>
 
+enum escape_err {
+	NO_ERROR,
+	ESC_ERROR,
+	ESC_ERROR_CHAR,
+	ESC_ERROR_HEX,
+	ESC_ERROR_DEC,
+};
+
 void fprint_hex(FILE *stream, const uint8_t *data, size_t len, int width, const char *indent, int show_offset);
 
 int parse_ofs_len(const char *in, ssize_t *at_ofs, ssize_t *at_len);
@@ -26,30 +34,6 @@ int parse_ofs_len(const char *in, ssize_t *at_ofs, ssize_t *at_len);
 size_t expand_escapes(const char *input, size_t slen, char *dest, size_t dlen, int *err);
 
 size_t buf_printf(char *buf, size_t bufsize, size_t *wp, int *truncated, const char *format, ...);
-
-// TODO: This rle8 parse stuff will move to a rle-parse.h in the future:
-// NOTE: The order and value of these matter.
-enum RLE_OP {
-	RLE_OP_CPY,
-	RLE_OP_REP,
-	RLE_OP_LIT,
-	RLE_OP_NOP,
-	RLE_OP_INVALID,
-};
-
-struct rle8 {
-	enum RLE_OP op;
-	uint8_t cnt; // TODO: rename to 'arg'?
-};
-
-struct rle8_params {
-	int min_cpy;
-	int max_cpy;
-	int min_rep;
-	int max_rep;
-};
-
-static struct rle8 parse_rle(const uint8_t *in, size_t len, const struct rle8_params *params);
 
 #ifdef UTILITY_IMPLEMENTATION
 #include <assert.h>
@@ -117,14 +101,6 @@ static uint8_t nibble(const char c) {
 	}
 	return 0;
 }
-
-enum escape_err {
-	NO_ERROR,
-	ESC_ERROR,
-	ESC_ERROR_CHAR,
-	ESC_ERROR_HEX,
-	ESC_ERROR_DEC,
-};
 
 // Expand escape codes. Not compatible with stdlib!
 //
@@ -236,54 +212,6 @@ size_t buf_printf(char *buf, size_t bufsize, size_t *wp, int *truncated, const c
 	}
 
 	return written;
-}
-
-static struct rle8 parse_rle(const uint8_t *in, size_t len, const struct rle8_params *params) {
-	struct rle8 res = { RLE_OP_CPY, 0 };
-
-	const uint8_t *p = in;
-	uint8_t prev = *p;
-	int num_same = 0;
-	int num_scan = 0;
-
-	while (p < in + len) {
-		++num_scan;
-		if (*p == prev) {
-			++num_same;
-		} else {
-			// Check end of REP.
-			if (num_same >= params->min_rep) {
-				return (struct rle8){ RLE_OP_REP, num_same };
-			}
-			num_same = 1;
-		}
-		// printf("<'%c' scan:%d, same:%d\n", *p, num_scan, num_same);
-
-		// Check for min-rep violation while in CPY scan
-		if (num_same == params->min_rep && num_scan != num_same) {
-			return (struct rle8){ RLE_OP_CPY, num_scan - num_same };
-		}
-
-		// Check for max-cpy limit
-		if (num_scan == params->max_cpy && (num_scan != num_same)) {
-			return (struct rle8){ RLE_OP_CPY, num_scan };
-		}
-
-		// Check for max-rep limit
-		if (num_same == params->max_rep && num_scan == num_same) {
-			return (struct rle8){ RLE_OP_REP, num_same };
-		}
-
-		prev = *p;
-		++p;
-	}
-	if (num_same == num_scan && num_same >= params->min_rep) {
-		res.op = RLE_OP_REP;
-	}
-
-	res.cnt = num_scan;
-
-	return res;
 }
 
 #endif
