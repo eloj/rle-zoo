@@ -28,10 +28,13 @@ unsigned char fuzz_buf[1024000];
 
 __AFL_FUZZ_INIT();
 
+#ifdef __clang__
 #pragma clang optimize off
+#else
 #pragma GCC optimize("O0")
+#endif
 
-int main() {
+int main(void) {
 	uint8_t dest[1024];
 
 #ifdef __AFL_HAVE_MANUAL_CONTROL
