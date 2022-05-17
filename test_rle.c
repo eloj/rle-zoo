@@ -15,6 +15,8 @@
 #include "rle_pcx.h"
 #include "rle_icns.h"
 
+#include "rle-variant-selection.h"
+
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -37,6 +39,7 @@ static int flag_roundtrip = 1;
 
 static int num_roundtrip = 0;
 
+
 struct test {
 	uint8_t *input;
 	size_t len;
@@ -45,46 +48,6 @@ struct test {
 	uint32_t expected_hash;	// CRC32c for now
 };
 
-// TODO: Variant selection code + tables can be shared.
-typedef ssize_t (*rle_fp)(const uint8_t *src, size_t slen, uint8_t *dest, size_t dlen);
-
-struct rle_t {
-	const char *name;
-	rle_fp compress;
-	rle_fp decompress;
-} rle_variants[] = {
-	{
-		.name = "goldbox",
-		.compress = goldbox_compress,
-		.decompress = goldbox_decompress
-	},
-	{
-		.name = "packbits",
-		.compress = packbits_compress,
-		.decompress = packbits_decompress
-	},
-	{
-		.name = "pcx",
-		.compress = pcx_compress,
-		.decompress = pcx_decompress
-	},
-	{
-		.name = "icns",
-		.compress = icns_compress,
-		.decompress = icns_decompress
-	},
-};
-
-static const size_t NUM_VARIANTS = sizeof(rle_variants)/sizeof(rle_variants[0]);
-
-static struct rle_t* get_rle_by_name(const char *name) {
-	for (size_t i = 0 ; i < NUM_VARIANTS ; ++i) {
-		if (strcmp(name, rle_variants[i].name) == 0) {
-			return &rle_variants[i];
-		}
-	}
-	return NULL;
-}
 
 /*
 	TODO: Should use some other digest with a simple plain-c implementation.
