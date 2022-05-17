@@ -19,6 +19,8 @@
 
 #define UTILITY_IMPLEMENTATION
 #include "utility.h"
+#define RLE_PARSE_IMPLEMENTATION
+#include "rle-parse.h"
 
 typedef struct rle8 (*rle8_decode_fp)(uint8_t input);
 typedef struct rle8 (*rle8_encode_fp)(struct rle8 cmd);
@@ -32,42 +34,6 @@ struct rle_parser {
 	rle8_encode_fp rle8_encode;
 	rle8_decode_fp rle8_decode;
 };
-
-// NOTE: The order and value of these matter.
-enum RLE_OP {
-	RLE_OP_CPY,
-	RLE_OP_REP,
-	RLE_OP_LIT,
-	RLE_OP_NOP,
-	RLE_OP_INVALID,
-};
-
-struct rle8 {
-	enum RLE_OP op;
-	uint8_t cnt; // TODO: rename to 'arg'?
-};
-
-static const char *rle_op_cstr(enum RLE_OP op) {
-	const char *res = "UNKNOWN";
-	switch (op) {
-		case RLE_OP_CPY:
-			res = "CPY";
-			break;
-		case RLE_OP_REP:
-			res = "REP";
-			break;
-		case RLE_OP_LIT:
-			res = "LIT";
-			break;
-		case RLE_OP_NOP:
-			res = "NOP";
-			break;
-		case RLE_OP_INVALID:
-			res = "INVALID";
-			break;
-	}
-	return res;
-}
 
 static struct rle8 rle8_decode_packbits(uint8_t input) {
 	struct rle8 cmd;

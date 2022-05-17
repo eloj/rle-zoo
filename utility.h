@@ -19,6 +19,14 @@ extern "C" {
 #include <limits.h>
 #include <stdarg.h>
 
+enum escape_err {
+	NO_ERROR,
+	ESC_ERROR,
+	ESC_ERROR_CHAR,
+	ESC_ERROR_HEX,
+	ESC_ERROR_DEC,
+};
+
 void fprint_hex(FILE *stream, const uint8_t *data, size_t len, int width, const char *indent, int show_offset);
 
 int parse_ofs_len(const char *in, ssize_t *at_ofs, ssize_t *at_len);
@@ -93,14 +101,6 @@ static uint8_t nibble(const char c) {
 	}
 	return 0;
 }
-
-enum escape_err {
-	NO_ERROR,
-	ESC_ERROR,
-	ESC_ERROR_CHAR,
-	ESC_ERROR_HEX,
-	ESC_ERROR_DEC,
-};
 
 // Expand escape codes. Not compatible with stdlib!
 //

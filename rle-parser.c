@@ -5,7 +5,9 @@
 	See https://github.com/eloj/rle-zoo
 
 	TODO:
-		Take optional offset, length args
+		The parser is incomplete and not fully functional.
+
+		Just give up and use getopt.h
 		Take debug flag to output ops.
 		Log count + ratios of ops, and CPY->REP and REP->CPY transitions.
 			e.g PCX decode on packbits input; very obviously wrong because almost only LITs
@@ -13,6 +15,8 @@
 */
 #define UTILITY_IMPLEMENTATION
 #include "utility.h"
+#define RLE_PARSE_IMPLEMENTATION
+#include "rle-parse.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -21,51 +25,7 @@
 #include <assert.h>
 #include <stdbool.h>
 
-#define BUF_SIZE (1024*1024)
-
-// COPIED FROM GENOPS FOR NOW.
-enum RLE_OP {
-	RLE_OP_CPY,
-	RLE_OP_REP,
-	RLE_OP_LIT,
-	RLE_OP_NOP,
-	RLE_OP_INVALID,
-};
-
-struct rle8 {
-	enum RLE_OP op;
-	uint8_t cnt;
-};
-
-struct rle8_tbl {
-	const char *name;
-	enum RLE_OP op_used;
-	const int16_t *encode_tbl[3];
-	const struct rle8 *decode_tbl;
-	const size_t minmax_op[3][2];
-};
-
-static const char *rle_op_cstr(enum RLE_OP op) {
-	const char *res = "UNKNOWN";
-	switch (op) {
-		case RLE_OP_CPY:
-			res = "CPY";
-			break;
-		case RLE_OP_REP:
-			res = "REP";
-			break;
-		case RLE_OP_LIT:
-			res = "LIT";
-			break;
-		case RLE_OP_NOP:
-			res = "NOP";
-			break;
-		case RLE_OP_INVALID:
-			res = "INVALID";
-			break;
-	}
-	return res;
-}
+#define MAX_BUF_SIZE (8*1024)
 
 #include "ops-packbits.h"
 #include "ops-goldbox.h"
@@ -79,24 +39,58 @@ static struct rle8_tbl* rle8_variants[] = {
 	&rle8_table_icns,
 };
 
+static const size_t RLE_ZOO_NUM_VARIANTS = sizeof(rle8_variants)/sizeof(rle8_variants[0]);
+
 static int debug_print = 1;
 static int debug_hex = 1;
+static int opt_all = 0;
+static int opt_encode = 0;
+static const char *infile;
+static const char *variant;
+static size_t p_offset;
+static size_t p_len;
 
-// Count the number of repeated characters in the buffer `src` of length `len`, up to the maximum `max`.
-// The count is inclusive; for any non-zero length input there's at least one repeated character.
-static size_t rle_count_rep(const uint8_t* src, size_t len, size_t max) {
-	size_t cnt = 0;
-	if (len && max) {
-		do { ++cnt; } while ((cnt + 1 <= len) && (cnt < max) && (src[cnt-1] == src[cnt]));
+static int parse_args(int argc, char **argv) {
+	int i;
+	for (i = 1 ; i < argc ; ++i) {
+		const char *arg = argv[i];
+		// "argv[argc] shall be a null pointer", section 5.1.2.2.1
+		const char *value = argv[i+1];
+
+		if (arg && *arg == '-') {
+			++arg;
+			switch (*arg) {
+				case 'o':
+					if (value) {
+						p_offset = strtol(value, NULL, 0);
+						++i;
+					}
+					break;
+				case 'n':
+					if (value) {
+						p_len = strtol(value, NULL, 0);
+						++i;
+					}
+					break;
+				case 'e':
+					opt_encode = 1;
+					break;
+				case 'd':
+					opt_encode = 0;
+					break;
+				case 't':
+					variant = value;
+					++i;
+					break;
+				default:
+					fprintf(stderr, "Unknown option '-%c'\n", *arg);
+					break;
+			}
+		} else {
+			break;
+		}
 	}
-	return cnt;
-}
-
-// Count the number of non-repeated characters in the buffer `src` of length `len`, up to the maximum `max`.
-static size_t rle_count_cpy(const uint8_t* src, size_t len, size_t max) {
-	size_t cnt = 0;
-	while ((cnt + 1 <= len) && (cnt < max) && ((cnt + 1 == len) || (src[cnt] != src[cnt+1]))) { ++cnt; };
-	return cnt;
+	return i;
 }
 
 static int rle_parse_encode(struct rle8_tbl *rle, const uint8_t *src, size_t slen) {
@@ -105,42 +99,55 @@ static int rle_parse_encode(struct rle8_tbl *rle, const uint8_t *src, size_t sle
 	size_t wp = 0;
 	size_t bailout = 8192;
 
-	size_t min_rep = rle->minmax_op[RLE_OP_REP][0];
-	size_t max_rep = rle->minmax_op[RLE_OP_REP][1];
-	size_t min_cpy = rle->minmax_op[RLE_OP_CPY][0];
-	size_t max_cpy = rle->minmax_op[RLE_OP_CPY][1];
+	struct rle8_params params = {
+		rle->minmax_op[RLE_OP_CPY][0],
+		rle->minmax_op[RLE_OP_CPY][1],
+		rle->minmax_op[RLE_OP_REP][0],
+		rle->minmax_op[RLE_OP_REP][1],
+	};
+
+	printf("Encode params = { cpy:{ %d, %d }, rep:{%d, %d} }\n", params.min_cpy, params.max_cpy, params.min_rep, params.max_rep);
+
+	if (rle->op_used & (1UL << RLE_OP_LIT)) {
+		printf("Unsupported encode table -- LIT scanning support not yet implemented.\n");
+		return 0;
+	}
 
 	while (rp < slen) {
-		uint8_t cnt = rle_count_rep(src + rp, slen - rp, max_rep);
-		if (cnt >= min_rep) {
-			// assert(cnt < rle->encode_tbl_len); // TODO: FIXME!
-			// Output RLE_OP_REP <cnt>
-			int op = rle->encode_tbl[RLE_OP_REP][cnt];
-			assert(op > -1);
-			printf("<%02X> REP '%c' %d\n", op, src[rp], cnt);
-			rp += cnt;
-			wp += 2;
-			continue;
-		}
-
-		cnt = rle_count_cpy(src + rp, slen - rp, max_cpy);
-		if (cnt >= min_cpy) {
-			// assert(cnt < rle->encode_tbl_len); // TODO: FIXME!
-			// Output RLE_OP_CNT <cnt>
-			int op = rle->encode_tbl[RLE_OP_CPY][cnt];
-			assert(op > -1);
-			printf("<%02X> CPY %d\n", op, cnt);
-			rp += cnt;
-			wp += cnt + 1;
-		} else {
-			printf("MIN CPY FAIL -- Don't know how to make progress.\n");
-			return -2;
-		}
+		struct rle8 res = parse_rle(src + rp, slen - rp, &params);
 
 		if (--bailout == 0) {
 			printf("Encode stalled, bailing.\n");
 			return -3;
 		}
+
+		if (res.op == RLE_OP_REP) {
+			int op = rle->encode_tbl[RLE_OP_REP][res.cnt];
+			assert(op > -1);
+			printf("<%02X> REP '%c' %d\n", op, src[rp], res.cnt);
+			rp += res.cnt;
+			wp += 2;
+			continue;
+		}
+
+		if (res.op == RLE_OP_CPY) {
+			int op = rle->encode_tbl[RLE_OP_CPY][res.cnt];
+			assert(op > -1);
+			printf("<%02X> CPY %d\n", op, res.cnt);
+			rp += res.cnt;
+			wp += res.cnt + 1;
+			continue;
+		}
+
+		if (res.op == RLE_OP_LIT) {
+			int op = rle->encode_tbl[RLE_OP_LIT][res.cnt];
+			assert(op > -1);
+			printf("<%02X> LIT %d\n", op, res.cnt);
+			rp += res.cnt;
+			wp += res.cnt;
+			continue;
+		}
+		assert(0 && "Invalid operation returned from parse_rle.");
 	}
 
 	printf("rp=%zu, wp=%zu\n", rp, wp);
@@ -191,7 +198,7 @@ static int rle_parse_decode(struct rle8_tbl *rle, const uint8_t *data, size_t le
 		}
 
 		if (--bailout == 0) {
-			printf("Parse stalled, bailing.\n");
+			printf("Decode stalled, bailing.\n");
 			return -3;
 		}
 	}
@@ -208,48 +215,91 @@ static int rle_parse_decode(struct rle8_tbl *rle, const uint8_t *data, size_t le
 	return 0;
 }
 
-int main(int argc, char *argv []) {
-	const char *infile = argc > 1 ? argv[1] : "tests/packbits/R128A_C128_R128A.rle";
-	int arg_encode = argc > 2 ? atoi(argv[2]) : 0;
+static struct rle8_tbl* get_rle8_by_name(const char *name) {
+	if (!name)
+		return NULL;
+	for (size_t i = 0 ; i < RLE_ZOO_NUM_VARIANTS ; ++i) {
+		if (strcmp(name, rle8_variants[i]->name) == 0) {
+			return rle8_variants[i];
+		}
+	}
+	return NULL;
+}
 
-	size_t p_offset = 0;
-	size_t p_len = BUF_SIZE;
+static void print_tbl_variants(void) {
+	printf("\nAvailable variants:\n");
+	for (size_t i = 0 ; i < RLE_ZOO_NUM_VARIANTS ; ++i) {
+		printf("  %s\n", rle8_variants[i]->name);
+	}
+}
+
+int main(int argc, char *argv []) {
+
+	int arg_rest = parse_args(argc, argv);
+
+	infile = argv[arg_rest];
+	struct rle8_tbl* rle = NULL;
+
+	if (!infile) {
+		printf("Usage: %s [-d|-e] [-o offset] [-n len] [-t variant|all] <file>\n", argv[0]);
+		print_tbl_variants();
+		return EXIT_SUCCESS;
+	}
+
+	if (!variant || strcmp(variant, "all") == 0) {
+		variant = "all";
+		opt_all = 1;
+	} else {
+		rle = get_rle8_by_name(variant);
+	}
+
+	if (!opt_all && !rle) {
+		print_tbl_variants();
+		fprintf(stderr, "ERROR: Unknown variant '%s'.\n", variant ?: "none");
+		return EXIT_FAILURE;
+	}
+
+	if (!p_len)
+		p_len = MAX_BUF_SIZE;
+	if (p_len > MAX_BUF_SIZE) {
+		fprintf(stderr, "ERROR: len > %zu; reduce len, or increase MAX_BUF_SIZE.\n", (size_t)MAX_BUF_SIZE);
+		exit(1);
+	}
 
 	FILE *f = fopen(infile, "rb");
 	if (!f) {
 		fprintf(stderr, "Error opening input '%s'\n", infile);
 		return EXIT_FAILURE;
 	}
-	printf("Reading input from '%s'\n", infile);
+	printf("Reading input from '%s' (offset=0x%zx, len=0x%zx)\n", infile, p_offset, p_len);
 
-	uint8_t *buf = malloc(BUF_SIZE);
+	uint8_t *buf = malloc(p_len);
 	if (p_offset) {
-		printf("Seeking to offset %08zx.\n", p_offset);
 		fseek(f, p_offset, SEEK_SET);
 	}
 	p_len = fread(buf, 1, p_len, f);
 	fclose(f);
 
-	if (p_len == BUF_SIZE) {
-		fprintf(stderr, "Error: truncated read, increase BUF_SIZE.\n");
-		exit(1);
-	}
-
-	struct rle8_tbl *rle = &rle8_table_packbits;
-	if (arg_encode == 1) {
-		rle_parse_encode(rle, buf, p_len);
-	} else if (arg_encode == 2) {
-		rle = &rle8_table_pcx;
-		rle_parse_decode(rle, buf, p_len);
-	} else {
-		for (size_t i = 0 ; i < sizeof(rle8_variants)/sizeof(rle8_variants[0]) ; ++i) {
+	if (opt_all == 1) {
+		int res;
+		for (size_t i = 0 ; i < RLE_ZOO_NUM_VARIANTS ; ++i) {
 			rle = rle8_variants[i];
-			int res = rle_parse_decode(rle, buf, p_len);
+			if (opt_encode == 1) {
+				res = rle_parse_encode(rle, buf, p_len);
+			} else {
+				res = rle_parse_decode(rle, buf, p_len);
+			}
 			if (res == 0) {
 				printf("Parse successful.\n");
 			} else {
 				printf("Parse error: %d\n", res);
 			}
+		}
+	} else {
+		if (opt_encode == 1) {
+			rle_parse_encode(rle, buf, p_len);
+		} else {
+			rle_parse_decode(rle, buf, p_len);
 		}
 	}
 
