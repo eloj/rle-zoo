@@ -5,8 +5,9 @@
 	See https://github.com/eloj/rle-zoo
 
 	TODO:
+		The parser is incomplete and not fully functional.
+
 		Just give up and use getopt.h
-		Take optional offset, length args
 		Take debug flag to output ops.
 		Log count + ratios of ops, and CPY->REP and REP->CPY transitions.
 			e.g PCX decode on packbits input; very obviously wrong because almost only LITs
@@ -24,7 +25,7 @@
 #include <assert.h>
 #include <stdbool.h>
 
-#define BUF_SIZE (1024*1024)
+#define MAX_BUF_SIZE (8*1024)
 
 #include "ops-packbits.h"
 #include "ops-goldbox.h"
@@ -38,8 +39,59 @@ static struct rle8_tbl* rle8_variants[] = {
 	&rle8_table_icns,
 };
 
+static const size_t RLE_ZOO_NUM_VARIANTS = sizeof(rle8_variants)/sizeof(rle8_variants[0]);
+
 static int debug_print = 1;
 static int debug_hex = 1;
+static int opt_all = 0;
+static int opt_encode = 0;
+static const char *infile;
+static const char *variant;
+static size_t p_offset;
+static size_t p_len;
+
+static int parse_args(int argc, char **argv) {
+	int i;
+	for (i = 1 ; i < argc ; ++i) {
+		const char *arg = argv[i];
+		// "argv[argc] shall be a null pointer", section 5.1.2.2.1
+		const char *value = argv[i+1];
+
+		if (arg && *arg == '-') {
+			++arg;
+			switch (*arg) {
+				case 'o':
+					if (value) {
+						p_offset = strtol(value, NULL, 0);
+						++i;
+					}
+					break;
+				case 'n':
+					if (value) {
+						p_len = strtol(value, NULL, 0);
+						++i;
+					}
+					break;
+				case 'e':
+					opt_encode = 1;
+					break;
+				case 'd':
+					opt_encode = 0;
+					break;
+				case 't':
+					variant = value;
+					++i;
+					break;
+				default:
+					fprintf(stderr, "Unknown option '-%c'\n", *arg);
+					break;
+			}
+		} else {
+			break;
+		}
+	}
+	return i;
+}
 
 static int rle_parse_encode(struct rle8_tbl *rle, const uint8_t *src, size_t slen) {
 	printf("Encoding %zu byte buffer with '%s'\n", slen, rle->name);
@@ -163,48 +215,91 @@ static int rle_parse_decode(struct rle8_tbl *rle, const uint8_t *data, size_t le
 	return 0;
 }
 
-int main(int argc, char *argv []) {
-	const char *infile = argc > 1 ? argv[1] : "tests/packbits/R128A_C128_R128A.rle";
-	int arg_encode = argc > 2 ? atoi(argv[2]) : 0;
+static struct rle8_tbl* get_rle8_by_name(const char *name) {
+	if (!name)
+		return NULL;
+	for (size_t i = 0 ; i < RLE_ZOO_NUM_VARIANTS ; ++i) {
+		if (strcmp(name, rle8_variants[i]->name) == 0) {
+			return rle8_variants[i];
+		}
+	}
+	return NULL;
+}
 
-	size_t p_offset = 0;
-	size_t p_len = BUF_SIZE;
+static void print_tbl_variants(void) {
+	printf("\nAvailable variants:\n");
+	for (size_t i = 0 ; i < RLE_ZOO_NUM_VARIANTS ; ++i) {
+		printf("  %s\n", rle8_variants[i]->name);
+	}
+}
+
+int main(int argc, char *argv []) {
+
+	int arg_rest = parse_args(argc, argv);
+
+	infile = argv[arg_rest];
+	struct rle8_tbl* rle = NULL;
+
+	if (!infile) {
+		printf("Usage: %s [-d|-e] [-o offset] [-n len] [-t variant|all] <file>\n", argv[0]);
+		print_tbl_variants();
+		return EXIT_SUCCESS;
+	}
+
+	if (!variant || strcmp(variant, "all") == 0) {
+		variant = "all";
+		opt_all = 1;
+	} else {
+		rle = get_rle8_by_name(variant);
+	}
+
+	if (!opt_all && !rle) {
+		print_tbl_variants();
+		fprintf(stderr, "ERROR: Unknown variant '%s'.\n", variant ?: "none");
+		return EXIT_FAILURE;
+	}
+
+	if (!p_len)
+		p_len = MAX_BUF_SIZE;
+	if (p_len > MAX_BUF_SIZE) {
+		fprintf(stderr, "ERROR: len > %zu; reduce len, or increase MAX_BUF_SIZE.\n", (size_t)MAX_BUF_SIZE);
+		exit(1);
+	}
 
 	FILE *f = fopen(infile, "rb");
 	if (!f) {
 		fprintf(stderr, "Error opening input '%s'\n", infile);
 		return EXIT_FAILURE;
 	}
-	printf("Reading input from '%s'\n", infile);
+	printf("Reading input from '%s' (offset=0x%zx, len=0x%zx)\n", infile, p_offset, p_len);
 
-	uint8_t *buf = malloc(BUF_SIZE);
+	uint8_t *buf = malloc(p_len);
 	if (p_offset) {
-		printf("Seeking to offset %08zx.\n", p_offset);
 		fseek(f, p_offset, SEEK_SET);
 	}
 	p_len = fread(buf, 1, p_len, f);
 	fclose(f);
 
-	if (p_len == BUF_SIZE) {
-		fprintf(stderr, "Error: truncated read, increase BUF_SIZE.\n");
-		exit(1);
-	}
-
-	struct rle8_tbl *rle = &rle8_table_icns;
-	if (arg_encode == 1) {
-		rle_parse_encode(rle, buf, p_len);
-	} else if (arg_encode == 2) {
-		rle = &rle8_table_pcx;
-		rle_parse_decode(rle, buf, p_len);
-	} else {
-		for (size_t i = 0 ; i < sizeof(rle8_variants)/sizeof(rle8_variants[0]) ; ++i) {
+	if (opt_all == 1) {
+		int res;
+		for (size_t i = 0 ; i < RLE_ZOO_NUM_VARIANTS ; ++i) {
 			rle = rle8_variants[i];
-			int res = rle_parse_decode(rle, buf, p_len);
+			if (opt_encode == 1) {
+				res = rle_parse_encode(rle, buf, p_len);
+			} else {
+				res = rle_parse_decode(rle, buf, p_len);
+			}
 			if (res == 0) {
 				printf("Parse successful.\n");
 			} else {
 				printf("Parse error: %d\n", res);
 			}
+		}
+	} else {
+		if (opt_encode == 1) {
+			rle_parse_encode(rle, buf, p_len);
+		} else {
+			rle_parse_decode(rle, buf, p_len);
 		}
 	}
 

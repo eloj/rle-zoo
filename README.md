@@ -52,7 +52,8 @@ the encoding and decoding scheme for a variant is consistent. Post-implementatio
 encoders and decoders.
 
 `rle-parser` can be used to parse a file using the available RLE variants, which could help identify the
-variant used on some unknown data. It also acts as a demonstrator for using `rle-genops` tables.
+variant used on some unknown data. It also acts as a demonstrator for using `rle-genops` tables. It
+is a work in progress though.
 
 ## Zoo Animals
 

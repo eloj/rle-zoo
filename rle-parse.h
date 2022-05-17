@@ -2,6 +2,10 @@
 	RLE Parsing Utility Functions
 	Copyright (c) 2022, Eddy L O Jansson. Licensed under The MIT License.
 
+	TODO:
+		The parser is incomplete and not fully functional.
+		Add support for LIT.
+
 	See https://github.com/eloj/rle-zoo
 */
 #ifdef __cplusplus
