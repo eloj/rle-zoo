@@ -4,6 +4,7 @@
 
 	TODO:
 		The parser is incomplete and not fully functional.
+		'goldbox' encoding is broken -- always uses REP due to min-rep==1
 		Add support for LIT.
 
 	See https://github.com/eloj/rle-zoo
@@ -85,13 +86,13 @@ struct rle8 parse_rle(const uint8_t *in, size_t len, const struct rle8_params *p
 		if (*p == prev) {
 			++num_same;
 		} else {
-			// Check end of REP.
+			// Check end of REP. -- XXX: this is b0rken..
 			if (num_same >= params->min_rep) {
 				return (struct rle8){ RLE_OP_REP, num_same };
 			}
 			num_same = 1;
 		}
-		// printf("<'%c' scan:%d, same:%d\n", *p, num_scan, num_same);
+		// printf("<'%c'> scan:%d, same:%d\n", *p, num_scan, num_same);
 
 		// Check for min-rep violation while in CPY scan
 		if (num_same == params->min_rep && num_scan != num_same) {
@@ -111,6 +112,7 @@ struct rle8 parse_rle(const uint8_t *in, size_t len, const struct rle8_params *p
 		prev = *p;
 		++p;
 	}
+
 	if (num_same == num_scan && num_same >= params->min_rep) {
 		res.op = RLE_OP_REP;
 	}

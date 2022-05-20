@@ -47,7 +47,7 @@ rle-zoo: rle-zoo.c $(RLE_VARIANT_HEADERS) rle-variant-selection.h
 rle-genops: rle-genops.c
 	$(CC) $(CFLAGS) $< $(filter %.o, $^) -o $@
 
-rle-parser: rle-parser.c $(RLE_VARIANT_OPS_HEADERS) utility.h
+rle-parser: rle-parser.c $(RLE_VARIANT_OPS_HEADERS) utility.h rle-parse.h
 	$(CC) $(CFLAGS) $< $(filter %.o, $^) -o $@
 
 test_rle: test_rle.c $(RLE_VARIANT_HEADERS) utility.h rle-variant-selection.h

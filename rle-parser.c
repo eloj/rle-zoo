@@ -6,6 +6,7 @@
 
 	TODO:
 		The parser is incomplete and not fully functional.
+		'goldbox' encoding is broken -- always uses REP.
 
 		Just give up and use getopt.h
 		Take debug flag to output ops.
