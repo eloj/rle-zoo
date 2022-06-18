@@ -79,6 +79,9 @@ static int parse_args(int argc, char **argv) {
 				case 'd':
 					opt_encode = 0;
 					break;
+				case 's':
+					debug_print = 0;
+					break;
 				case 't':
 					variant = value;
 					++i;
@@ -95,6 +98,7 @@ static int parse_args(int argc, char **argv) {
 }
 
 static int rle_parse_encode(struct rle8_tbl *rle, const uint8_t *src, size_t slen) {
+	printf("WARNING: Encoding is currently broken for some encoding tables, output can be wrong.\n");
 	printf("Encoding %zu byte buffer with '%s'\n", slen, rle->name);
 	size_t rp = 0;
 	size_t wp = 0;
@@ -122,10 +126,13 @@ static int rle_parse_encode(struct rle8_tbl *rle, const uint8_t *src, size_t sle
 			return -3;
 		}
 
+		if (debug_print)
+			printf("%08zx: ", rp);
+
 		if (res.op == RLE_OP_REP) {
 			int op = rle->encode_tbl[RLE_OP_REP][res.cnt];
 			assert(op > -1);
-			printf("<%02X> REP '%c' %d\n", op, src[rp], res.cnt);
+			printf("<%02x> REP %d '%02x'\n", op, res.cnt, src[rp]);
 			rp += res.cnt;
 			wp += 2;
 			continue;
@@ -134,7 +141,13 @@ static int rle_parse_encode(struct rle8_tbl *rle, const uint8_t *src, size_t sle
 		if (res.op == RLE_OP_CPY) {
 			int op = rle->encode_tbl[RLE_OP_CPY][res.cnt];
 			assert(op > -1);
-			printf("<%02X> CPY %d\n", op, res.cnt);
+			printf("<%02x> CPY %d", op, res.cnt);
+			if (debug_print && debug_hex) {
+				printf(" ; ");
+				fflush(stdout);
+				fprint_hex(stdout, src + rp + 1, res.cnt, 0, NULL, 0);
+			}
+			printf("\n");
 			rp += res.cnt;
 			wp += res.cnt + 1;
 			continue;
@@ -143,7 +156,7 @@ static int rle_parse_encode(struct rle8_tbl *rle, const uint8_t *src, size_t sle
 		if (res.op == RLE_OP_LIT) {
 			int op = rle->encode_tbl[RLE_OP_LIT][res.cnt];
 			assert(op > -1);
-			printf("<%02X> LIT %d\n", op, res.cnt);
+			printf("<%02x> LIT %d\n", op, res.cnt);
 			rp += res.cnt;
 			wp += res.cnt;
 			continue;
@@ -182,7 +195,7 @@ static int rle_parse_decode(struct rle8_tbl *rle, const uint8_t *data, size_t le
 				wp += op.cnt;
 			} else if (op.op == RLE_OP_REP) {
 				if (debug_print)
-					printf(" %02x * %d", data[rp+1], op.cnt);
+					printf(" %d '%02x'", op.cnt, data[rp+1]);
 				rp += 2;
 				wp += op.cnt;
 			} else if (op.op == RLE_OP_LIT) {
@@ -242,7 +255,14 @@ int main(int argc, char *argv []) {
 	struct rle8_tbl* rle = NULL;
 
 	if (!infile) {
-		printf("Usage: %s [-d|-e] [-o offset] [-n len] [-t variant|all] <file>\n", argv[0]);
+		printf("Usage: %s [-d|-e] [-s] [-o offset] [-n len] [-t variant|all] <file>\n", argv[0]);
+		printf("\noptions:\n"
+			"\t-d|-e\tdecode / encode(broken)\n"
+			"\t-s\t\tsilent -- no debug print\n"
+			"\t-o\t\tfile offset to start at\n"
+			"\t-n\t\tnumber of bytes to process\n"
+			"\t-t\t\tcodec name, or 'all'\n"
+		);
 		print_tbl_variants();
 		return EXIT_SUCCESS;
 	}
@@ -272,7 +292,7 @@ int main(int argc, char *argv []) {
 		fprintf(stderr, "Error opening input '%s'\n", infile);
 		return EXIT_FAILURE;
 	}
-	printf("Reading input from '%s' (offset=0x%zx, len=0x%zx)\n", infile, p_offset, p_len);
+	printf("Reading input from '%s' (offset=0x%zx, max len=0x%zx)\n", infile, p_offset, p_len);
 
 	uint8_t *buf = malloc(p_len);
 	if (p_offset) {

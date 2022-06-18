@@ -92,6 +92,7 @@ int parse_ofs_len(const char *in, ssize_t *at_ofs, ssize_t *at_len) {
 }
 
 static uint8_t nibble(const char c) {
+	// return c + '0' + (((unsigned)(9 - c) >> 4) & 0x27);
 	if (c >= '0' && c <= '9') {
 		return c - '0';
 	} else if (c >= 'a' && c <= 'f') {
