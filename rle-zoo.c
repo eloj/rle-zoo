@@ -20,10 +20,16 @@
 
 #include "rle-variant-selection.h"
 
+#include "build_const.h"
+
 static const char *infile;
 static const char *outfile;
 static const char *variant;
 static int compress = 0;
+
+static void print_banner(void) {
+	printf("rle-zoo %s <%.*s>\n", build_version, 8, build_hash);
+}
 
 static int parse_args(int argc, char **argv) {
 	// TODO: just use getopt.h?
@@ -52,6 +58,11 @@ static int parse_args(int argc, char **argv) {
 					case 't':
 						variant = value;
 						break;
+				}
+			} else {
+				if (*arg == 'v' || *arg == 'V' || strcmp(arg, "-version") == 0) {
+					print_banner();
+					exit(0);
 				}
 			}
 		}
@@ -146,6 +157,8 @@ static void rle_decompress_file(const char *srcfile, const char *destfile, rle_f
 int main(int argc, char *argv []) {
 
 	parse_args(argc, argv);
+
+	print_banner();
 
 	if (!infile || !outfile || !variant) {
 		printf("Usage: %s -t variant -c file|-d file -o outfile\n", argv[0]);

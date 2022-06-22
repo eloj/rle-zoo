@@ -33,6 +33,8 @@
 #include "ops-pcx.h"
 #include "ops-icns.h"
 
+#include "build_const.h"
+
 static struct rle8_tbl* rle8_variants[] = {
 	&rle8_table_goldbox,
 	&rle8_table_packbits,
@@ -50,6 +52,10 @@ static const char *infile;
 static const char *variant;
 static size_t p_offset;
 static size_t p_len;
+
+static void print_banner(void) {
+	printf("rle-parser %s <%.*s>\n", build_version, 8, build_hash);
+}
 
 static int parse_args(int argc, char **argv) {
 	int i;
@@ -86,9 +92,18 @@ static int parse_args(int argc, char **argv) {
 					variant = value;
 					++i;
 					break;
+				case 'v':
+					/* fallthrough */
+				case 'V':
+					print_banner();
+					exit(0);
 				default:
 					fprintf(stderr, "Unknown option '-%c'\n", *arg);
 					break;
+			}
+			if (strcmp(arg, "-version") == 0) {
+				print_banner();
+				exit(0);
 			}
 		} else {
 			break;
@@ -248,8 +263,9 @@ static void print_tbl_variants(void) {
 }
 
 int main(int argc, char *argv []) {
-
 	int arg_rest = parse_args(argc, argv);
+
+	print_banner();
 
 	infile = argv[arg_rest];
 	struct rle8_tbl* rle = NULL;

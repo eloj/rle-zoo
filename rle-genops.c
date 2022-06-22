@@ -22,6 +22,8 @@
 #define RLE_PARSE_IMPLEMENTATION
 #include "rle-parse.h"
 
+#include "build_const.h"
+
 typedef struct rle8 (*rle8_decode_fp)(uint8_t input);
 typedef struct rle8 (*rle8_encode_fp)(struct rle8 cmd);
 
@@ -255,7 +257,7 @@ static size_t rle8_generate_op_encode_array(struct rle_parser *p, int OP, char *
 
 static void rle8_generate_encode_table(struct rle_parser *p) {
 	// TODO: This should be autodetected by max of valid CPY/REP/LIT encoding, rest padded to -1
-	int max_len = 256;
+	// int max_len = 256;
 
 	int minmax[3][2] = { { INT_MAX, INT_MIN }, { INT_MAX, INT_MIN }, { INT_MAX, INT_MIN } };
 	int op_usage[RLE_OP_INVALID + 1] = { 0 };
@@ -356,6 +358,10 @@ static struct rle_parser* get_parser_by_name(const char *name) {
 	return NULL;
 }
 
+static void print_banner(void) {
+	printf("rle-genops %s <%.*s>\n", build_version, 8, build_hash);
+}
+
 static void print_variants(void) {
 	printf("\nAvailable variants:\n");
 	struct rle_parser *p = parsers;
@@ -366,6 +372,7 @@ static void print_variants(void) {
 }
 
 static void usage(const char *argv) {
+	print_banner();
 	printf("%s [OPTION] <variant>\n\n", argv);
 
 	printf("Options:\n");
@@ -392,7 +399,10 @@ static int parse_args(int *argc, char ***argv) {
 			if (arg[0] == '-') {
 				// long option
 				++arg;
-				if (strcmp(arg, "help") == 0) {
+				if (strcmp(arg, "version") == 0) {
+					print_banner();
+					exit(0);
+				} else if (strcmp(arg, "help") == 0) {
 					opt_usage = 1;
 				} else if (strcmp(arg, "genc") == 0) {
 					opt_genc = 1;
@@ -402,7 +412,10 @@ static int parse_args(int *argc, char ***argv) {
 				}
 			} else {
 				// short option
-				if (strcmp(arg, "h") == 0) {
+				if (strcmp(arg, "v") == 0 || strcmp(arg, "V") == 0) {
+					print_banner();
+					exit(0);
+				} else if (strcmp(arg, "h") == 0) {
 					opt_usage = 1;
 				} else {
 					retval = 1;

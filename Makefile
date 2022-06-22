@@ -37,17 +37,27 @@ CFLAGS=-std=c11 $(OPT) $(CWARNFLAGS) $(WARNFLAGS) $(MISCFLAGS)
 
 all: tools tests
 
+FORCE:
+
+build_const.h: FORCE VERSION
+	@git show-ref --head --hash | head -n 1 | awk '{ printf "const char *build_hash = \"%s\";\n",$$1 }' > $@.tmp && echo 'const char *build_version = "'$$(cat VERSION)'";\n' >> $@.tmp
+	@if test -r $@ ; then \
+		(cmp $@.tmp $@ && rm $@.tmp) || mv -f $@.tmp $@ ; \
+	else \
+		mv $@.tmp $@ ; \
+	fi
+
 tools: rle-zoo rle-genops rle-parser
 
 tests: test_rle test_parse test_utility
 
-rle-zoo: rle-zoo.c $(RLE_VARIANT_HEADERS) rle-variant-selection.h
+rle-zoo: rle-zoo.c $(RLE_VARIANT_HEADERS) rle-variant-selection.h build_const.h
 	$(CC) $(CFLAGS) $< $(filter %.o, $^) -o $@
 
-rle-genops: rle-genops.c
+rle-genops: rle-genops.c build_const.h
 	$(CC) $(CFLAGS) $< $(filter %.o, $^) -o $@
 
-rle-parser: rle-parser.c $(RLE_VARIANT_OPS_HEADERS) utility.h rle-parse.h
+rle-parser: rle-parser.c $(RLE_VARIANT_OPS_HEADERS) utility.h rle-parse.h build_const.h
 	$(CC) $(CFLAGS) $< $(filter %.o, $^) -o $@
 
 test_rle: test_rle.c $(RLE_VARIANT_HEADERS) utility.h rle-variant-selection.h
@@ -91,4 +101,5 @@ backup:
 
 clean:
 	@echo -e $(YELLOW)Cleaning$(NC)
-	rm -f rle-zoo rle-genops rle-parser test_rle test_utility test_parse test_example test_includeall afl-driver $(RLE_VARIANT_OPS_HEADERS) vgcore.* core.* *.gcda
+	rm -f rle-zoo rle-genops rle-parser build_const.h test_rle test_utility test_parse test_example test_includeall afl-driver $(RLE_VARIANT_OPS_HEADERS) vgcore.* core.* *.gcda
+	rm -rf packages
