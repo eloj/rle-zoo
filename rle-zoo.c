@@ -10,7 +10,6 @@
 #include <stdint.h>
 #include <assert.h>
 #include <stdbool.h>
-#include <err.h>
 
 #define RLE_ZOO_IMPLEMENTATION
 #include "rle_goldbox.h"
@@ -82,12 +81,13 @@ static void rle_compress_file(const char *srcfile, const char *destfile, rle_fp 
 	long slen = ftell(ifile);
 	fseek(ifile, 0, SEEK_SET);
 
-	printf("Compressing %zu bytes.\n", slen);
+	printf("Compressing %lu bytes.\n", slen);
 	FILE *ofile = fopen(destfile, "wb");
 	if (ofile) {
 		uint8_t *src = malloc(slen);
 		if ((fread(src, slen, 1, ifile) != 1) && (ferror(ifile) != 0)) {
-			err(1, "fread: %s", srcfile);
+			fprintf(stderr, "%s: fread: %s: %m", __FILE__, srcfile);
+			exit(EXIT_FAILURE);
 		}
 
 		ssize_t clen = compress_func(src, slen, NULL, 0);
@@ -122,7 +122,7 @@ static void rle_decompress_file(const char *srcfile, const char *destfile, rle_f
 	fseek(ifile, 0, SEEK_SET);
 
 	if (slen > 0) {
-		printf("Decompressing %zu bytes.\n", slen);
+		printf("Decompressing %lu bytes.\n", slen);
 		FILE *ofile = stdout;
 		if (strcmp(destfile, "-") != 0) {
 			ofile = fopen(destfile, "wb");
@@ -130,7 +130,8 @@ static void rle_decompress_file(const char *srcfile, const char *destfile, rle_f
 		if (ofile) {
 			uint8_t *src = malloc(slen);
 			if ((fread(src, slen, 1, ifile) != 1) && (ferror(ifile) != 0)) {
-				err(1, "fread: %s", srcfile);
+				fprintf(stderr, "%s: fread: %s: %m", __FILE__, srcfile);
+				exit(EXIT_FAILURE);
 			}
 
 			ssize_t dlen = decompress_func(src, slen, NULL, 0);

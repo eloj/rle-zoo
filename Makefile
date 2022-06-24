@@ -40,7 +40,7 @@ all: tools tests
 FORCE:
 
 build_const.h: FORCE VERSION
-	@git show-ref --head --hash | head -n 1 | awk '{ printf "const char *build_hash = \"%s\";\n",$$1 }' > $@.tmp && echo 'const char *build_version = "'$$(cat VERSION)'";\n' >> $@.tmp
+	@git show-ref --head --hash | head -n 1 | awk '{ printf "const char *build_hash = \"%s\";\n",$$1 }' > $@.tmp && echo 'const char *build_version = "'$$(cat VERSION)'";' >> $@.tmp
 	@if test -r $@ ; then \
 		(cmp $@.tmp $@ && rm $@.tmp) || mv -f $@.tmp $@ ; \
 	else \
