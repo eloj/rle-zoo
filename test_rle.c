@@ -249,7 +249,8 @@ static int map_file(const char *filename, size_t ofs, ssize_t len, void **data, 
 
 	int res = fseek(f, 0, SEEK_END);
 	if (res != 0) {
-		errx(1, "System has broken fseek() -- guess we should have used fstat instead, huh.");
+		fprintf(stderr, "System has broken fseek() -- guess we should have used fstat instead, huh.");
+		exit(1);
 	}
 	size_t flen = ftell(f);
 

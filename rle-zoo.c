@@ -10,6 +10,7 @@
 #include <stdint.h>
 #include <assert.h>
 #include <stdbool.h>
+#include <errno.h>
 
 #define RLE_ZOO_IMPLEMENTATION
 #include "rle_goldbox.h"

@@ -234,7 +234,7 @@ They also come in ascending order compared with packbits; more characters are co
 
 * Add 'all' variant compression reporting to `rle-zoo`
 * Make the rle-parse encoder follow limits/correct.
-* Add more animals. Potential candidates: BMP(?), TGA, ...
+* Add more animals. Potential candidates: BMP(?), TGA, EXEPACK(?!), ...
 * Improve `rle-zoo` to behave more like a standard UNIX filter.
 
 ## License
