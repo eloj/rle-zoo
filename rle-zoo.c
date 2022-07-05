@@ -74,7 +74,7 @@ static void rle_compress_file(const char *srcfile, const char *destfile, rle_fp 
 	FILE *ifile = fopen(srcfile, "rb");
 
 	if (!ifile) {
-		fprintf(stderr, "Error: %m\n");
+		fprintf(stderr, "Error: %s\n", strerror(errno));
 		return;
 	}
 	fseek(ifile, 0, SEEK_END);
@@ -86,7 +86,7 @@ static void rle_compress_file(const char *srcfile, const char *destfile, rle_fp 
 	if (ofile) {
 		uint8_t *src = malloc(slen);
 		if ((fread(src, slen, 1, ifile) != 1) && (ferror(ifile) != 0)) {
-			fprintf(stderr, "%s: fread: %s: %m", __FILE__, srcfile);
+			fprintf(stderr, "%s: fread: %s: %s", __FILE__, srcfile, strerror(errno));
 			exit(EXIT_FAILURE);
 		}
 
@@ -105,7 +105,7 @@ static void rle_compress_file(const char *srcfile, const char *destfile, rle_fp 
 		fclose(ofile);
 		free(src);
 	} else {
-		fprintf(stderr, "Error: %m\n");
+		fprintf(stderr, "Error: %s\n", strerror(errno));
 	}
 	fclose(ifile);
 }
@@ -114,7 +114,7 @@ static void rle_decompress_file(const char *srcfile, const char *destfile, rle_f
 	FILE *ifile = fopen(srcfile, "rb");
 
 	if (!ifile) {
-		fprintf(stderr, "Error: %m\n");
+		fprintf(stderr, "Error: %s\n", strerror(errno));
 		return;
 	}
 	fseek(ifile, 0, SEEK_END);
@@ -130,7 +130,7 @@ static void rle_decompress_file(const char *srcfile, const char *destfile, rle_f
 		if (ofile) {
 			uint8_t *src = malloc(slen);
 			if ((fread(src, slen, 1, ifile) != 1) && (ferror(ifile) != 0)) {
-				fprintf(stderr, "%s: fread: %s: %m", __FILE__, srcfile);
+				fprintf(stderr, "%s: fread: %s: %s", __FILE__, srcfile, strerror(errno));
 				exit(EXIT_FAILURE);
 			}
 
@@ -149,7 +149,7 @@ static void rle_decompress_file(const char *srcfile, const char *destfile, rle_f
 			fclose(ofile);
 			free(src);
 		} else {
-			fprintf(stderr, "Error: %m\n");
+			fprintf(stderr, "Error: %s\n", strerror(errno));
 		}
 	}
 	fclose(ifile);
