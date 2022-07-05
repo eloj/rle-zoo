@@ -22,7 +22,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
-#include <err.h>
 #include <errno.h>
 #include <ctype.h>
 #include <sys/mman.h>

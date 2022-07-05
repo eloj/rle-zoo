@@ -10,7 +10,12 @@ extern "C" {
 
 #include <stdint.h>
 #include <stddef.h>
+#if defined(_MSC_VER)
+#include <BaseTsd.h>
+typedef SSIZE_T ssize_t;
+#else
 #include <sys/types.h> // ssize_t
+#endif
 
 ssize_t packbits_compress(const uint8_t *src, size_t slen, uint8_t *dest, size_t dlen);
 ssize_t packbits_decompress(const uint8_t *src, size_t slen, uint8_t *dest, size_t dlen);
