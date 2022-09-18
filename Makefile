@@ -2,7 +2,7 @@ OPT=-O3 -fomit-frame-pointer -funroll-loops -fstrict-aliasing -march=native -mtu
 WARNFLAGS=-Wall -Wextra -Wshadow -Wstrict-aliasing -Wcast-qual -Wcast-align -Wpointer-arith -Wredundant-decls -Wfloat-equal -Wswitch-enum -Wstrict-overflow
 CWARNFLAGS=-Wstrict-prototypes -Wmissing-prototypes
 MISCFLAGS=-fstack-protector -fcf-protection -fvisibility=hidden
-DEVFLAGS=-ggdb -DDEBUG -Wno-unused
+DEVFLAGS=-ggdb -DDEBUG -Wno-unused -D_FORTIFY_SOURCE=3
 STRICT_FLAGS=-Werror -Wconversion
 
 RLE_VARIANTS:=goldbox packbits pcx icns
