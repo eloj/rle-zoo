@@ -83,9 +83,9 @@ Reading input from 'tests/packbits/tn1023' (offset=0x0, max len=0x2000)
 Encoding 24 byte buffer with 'packbits'
 Encode params = { cpy:{ 1, 128 }, rep:{2, 128} }
 00000000: <fe> REP 3 'aa'
-00000003: <02> CPY 3 ; 00 2a aa
+00000003: <02> CPY 3 ; 80 00 2a
 00000006: <fd> REP 4 'aa'
-0000000a: <03> CPY 4 ; 00 2a 22 aa
+0000000a: <03> CPY 4 ; 80 00 2a 22
 0000000e: <f7> REP 10 'aa'
 rp=24, wp=15
 ```

@@ -160,7 +160,7 @@ static int rle_parse_encode(struct rle8_tbl *rle, const uint8_t *src, size_t sle
 			if (debug_print && debug_hex) {
 				printf(" ; ");
 				fflush(stdout);
-				fprint_hex(stdout, src + rp + 1, res.cnt, 0, NULL, 0);
+				fprint_hex(stdout, src + rp, res.cnt, 0, NULL, 0);
 			}
 			printf("\n");
 			rp += res.cnt;
