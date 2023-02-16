@@ -95,6 +95,9 @@ fuzz-%:
 
 fuzz: fuzz-driver
 
+cppcheck:
+	cppcheck --verbose --error-exitcode=1 --enable=warning,performance,portability .
+
 backup:
 	@echo -e $(YELLOW)Making backup$(NC)
 	tar -cJf ../$(notdir $(CURDIR))-`date +"%Y-%m"`.tar.xz ../$(notdir $(CURDIR))

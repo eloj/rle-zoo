@@ -82,7 +82,9 @@ static void rle_compress_file(const char *srcfile, const char *destfile, rle_fp 
 	long slen = ftell(ifile);
 	fseek(ifile, 0, SEEK_SET);
 
-	printf("Compressing %lu bytes.\n", slen);
+	printf("Compressing %ld bytes.\n", slen);
+	assert(slen > 0);
+
 	FILE *ofile = fopen(destfile, "wb");
 	if (ofile) {
 		uint8_t *src = malloc(slen);
@@ -123,7 +125,7 @@ static void rle_decompress_file(const char *srcfile, const char *destfile, rle_f
 	fseek(ifile, 0, SEEK_SET);
 
 	if (slen > 0) {
-		printf("Decompressing %lu bytes.\n", slen);
+		printf("Decompressing %ld bytes.\n", slen);
 		FILE *ofile = stdout;
 		if (strcmp(destfile, "-") != 0) {
 			ofile = fopen(destfile, "wb");

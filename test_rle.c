@@ -88,7 +88,7 @@ static int roundtrip(struct rle_t *rle, struct test *te, uint8_t *inbuf, size_t 
 			fprint_hex(stdout, tmp_buf, te->len, 32, "\n", hex_show_offset);
 			fprintf(stdout, " ...<truncated>");
 		} else {
-			fprintf(stdout, " %zu bytes:\n", res);
+			fprintf(stdout, " %zd bytes:\n", res);
 			fprint_hex(stdout, tmp_buf, res, 32, "\n", hex_show_offset);
 		}
 		fflush(stdout);
@@ -117,7 +117,6 @@ static int run_rle_test(struct rle_t *rle, struct test *te, const char *filename
 
 	char *action = te->actions;
 	int no_roundtrip = strchr(action, '-') != NULL;
-	ssize_t res = 0;
 
 	if (*action == 'c') {
 		// COMPRESS
@@ -125,13 +124,13 @@ static int run_rle_test(struct rle_t *rle, struct test *te, const char *filename
 		// First do a length-determination check on the input.
 		ssize_t len_check = rle->compress(te->input, te->len, NULL, 0);
 		if (len_check != te->expected_size) {
-			TEST_ERRMSG("expected compressed size %zu, got %zd.", te->expected_size, len_check);
+			TEST_ERRMSG("expected compressed size %zd, got %zd.", te->expected_size, len_check);
 			retval = 1;
 		}
 		if (len_check >= 0) {
 			// Next compress the input into the oversized buffer, and verify length remains the same.
 			assert(len_check <= (ssize_t)tmp_size);
-			res = rle->compress(te->input, te->len, tmp_buf, tmp_size);
+			ssize_t res = rle->compress(te->input, te->len, tmp_buf, tmp_size);
 			if (res != len_check) {
 				TEST_ERRMSG("compressed output length differs from determined value %zd, got %zd.", len_check, res);
 				retval = 1;
@@ -187,7 +186,7 @@ static int run_rle_test(struct rle_t *rle, struct test *te, const char *filename
 		if (len_check > 0) {
 			// Next decompress the input into the oversized buffer, and verify length remains the same.
 			assert(len_check <= (ssize_t)tmp_size);
-			res = rle->decompress(te->input, te->len, tmp_buf, tmp_size);
+			ssize_t res = rle->decompress(te->input, te->len, tmp_buf, tmp_size);
 			if (res != len_check) {
 				TEST_ERRMSG("decompressed output length differs from determined value %zd, got %zd.", len_check, res);
 				retval = 1;
@@ -272,10 +271,11 @@ static int map_file(const char *filename, size_t ofs, ssize_t len, void **data, 
 		}
 		*data = base;
 		*size = len;
-		fclose(f);
 	} else {
+		fclose(f);
 		return 3;
 	}
+	fclose(f);
 
 	return 0;
 }

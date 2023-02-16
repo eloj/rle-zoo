@@ -127,7 +127,7 @@ static int test_parse_ofs_len(void) {
 		{ "", 0, 0, -1 },
 		{ "[:", 0, 0, -2 },
 		{ "[0abba]", 0, 0, -2 },
-		{ "[:1abba]", 0, 0, -2 },
+		{ "[:1abba]", 0, 1, -2 },
 		{ "[9999999999999999999]", 0, 0, -3 },
 		{ "[:9999999999999999999]", 0, 0, -4 },
 	};
@@ -153,7 +153,7 @@ static int test_parse_ofs_len(void) {
 			++fails;
 			continue;
 		}
-		if (res_ofs != test->expected_ofs) {
+		if (res_len != test->expected_len) {
 			TEST_ERRMSG("parsed length mismatch, expected '%zd', got '%zd'.", test->expected_len, res_len);
 			++fails;
 			continue;

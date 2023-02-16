@@ -96,9 +96,9 @@ static int test_rep(void) {
 	}
 
 	{
-		size_t i = 0;
 		size_t rep0 = rle_count_rep((const uint8_t*)"BBBBA", 5, 128);
 		if (rep0 != 4) {
+			size_t i = 0;
 			TEST_ERRMSG("REP should be 4 for BBBBA, got %zu", rep0);
 			++fails;
 		}

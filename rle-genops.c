@@ -46,18 +46,19 @@ static struct rle8 rle8_decode_packbits(uint8_t input) {
 	} else if (input < 0x80) {
 		cmd.op = RLE_OP_CPY;
 		cmd.cnt = input + 1;
-	} else if (input == 0x80) {
+	} else /* if (input == 0x80) */ {
+		assert(input == 0x80);
 		cmd.op = RLE_OP_NOP;
 		cmd.cnt = 1;
-	} else {
-		// Impossible -- all decodings are valid
-		cmd.op = RLE_OP_INVALID;
-		cmd.cnt = 0;
 	}
 
-	assert((cmd.op != RLE_OP_REP) || (cmd.cnt <= 128 || cmd.cnt >= 2));
-	assert((cmd.op != RLE_OP_CPY) || (cmd.cnt <= 128 || cmd.cnt >= 1));
-
+	assert(
+		((cmd.op == RLE_OP_REP) && (cmd.cnt <= 128 && cmd.cnt >= 2))
+		||
+		((cmd.op == RLE_OP_CPY) && (cmd.cnt <= 128 && cmd.cnt >= 1))
+		||
+		((cmd.op == RLE_OP_NOP) && (cmd.cnt == 1))
+	);
 	return cmd;
 }
 
@@ -95,8 +96,13 @@ static struct rle8 rle8_decode_goldbox(uint8_t input) {
 		cmd.cnt = 0;
 	}
 
-	assert((cmd.op != RLE_OP_REP) || (cmd.cnt <= 127 || cmd.cnt > 0));
-	assert((cmd.op != RLE_OP_CPY) || (cmd.cnt <= 126 || cmd.cnt > 0));
+	assert(
+		((cmd.op == RLE_OP_REP) && (cmd.cnt <= 127 && cmd.cnt > 0))
+		||
+		((cmd.op == RLE_OP_CPY) && (cmd.cnt <= 126 && cmd.cnt > 0))
+		||
+		((cmd.op == RLE_OP_INVALID && cmd.cnt == 0))
+	);
 
 	return cmd;
 }
@@ -130,8 +136,11 @@ static struct rle8 rle8_decode_pcx(uint8_t input) {
 		cmd.cnt = input;
 	}
 
-	assert((cmd.op != RLE_OP_REP) || (cmd.cnt <= 191 || cmd.cnt >= 0));
-	assert((cmd.op != RLE_OP_LIT) || (cmd.cnt <= 63  || cmd.cnt >= 0));
+	assert(
+		((cmd.op == RLE_OP_LIT) && (cmd.cnt <= 191 && cmd.cnt >= 0))
+		||
+		((cmd.op == RLE_OP_REP) && (cmd.cnt <= 63 && cmd.cnt >= 0))
+	);
 
 	return cmd;
 }
@@ -165,8 +174,11 @@ static struct rle8 rle8_decode_icns(uint8_t input) {
 		cmd.cnt = input + 1; // 1-128
 	}
 
-	assert((cmd.op != RLE_OP_REP) || (cmd.cnt <= 130 || cmd.cnt >= 3));
-	assert((cmd.op != RLE_OP_CPY) || (cmd.cnt <= 128 || cmd.cnt >= 1));
+	assert(
+		((cmd.op == RLE_OP_REP) && (cmd.cnt <= 130 && cmd.cnt >= 3))
+		||
+		((cmd.op == RLE_OP_CPY) && (cmd.cnt <= 128 && cmd.cnt >= 1))
+	);
 
 	return cmd;
 }
@@ -350,7 +362,7 @@ struct rle_parser parsers[] = {
 static const size_t NUM_VARIANTS = sizeof(parsers)/sizeof(parsers[0]);
 
 static struct rle_parser* get_parser_by_name(const char *name) {
-	for (size_t i = 0 ; i < NUM_VARIANTS ; ++i) {
+	for (size_t i = 0 ; name && i < NUM_VARIANTS ; ++i) {
 		if (strcmp(name, parsers[i].name) == 0) {
 			return &parsers[i];
 		}
