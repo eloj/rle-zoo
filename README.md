@@ -225,7 +225,7 @@ any `REP` with a count of 2 or less is redundant, and doesn't waste precious cod
 	* 0xfe => REP 129
 	* 0xff => REP 130
 * CPY: If high-bit is clear, then `OP + 1` literal bytes follow.
-* REP: If high-bit is set, then repeat next byte `OP - 125` times.
+* REP: If high-bit is set, then repeat next byte `OP - 125` times. Alternatively, clear the high bit and add three to get the count.
 
 The `CPY` OPs (0x00-0x7f) are the same as in packbits, but the `REP` OPs (0x80-) have been adjusted up to a minimum count of three.
 They also come in ascending order compared with packbits; more characters are copied as the OP increase in value, versus fewer in packbits.

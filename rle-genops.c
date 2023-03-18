@@ -166,9 +166,9 @@ static struct rle8 rle8_encode_pcx(struct rle8 cmd) {
 static struct rle8 rle8_decode_icns(uint8_t input) {
 	struct rle8 cmd;
 
-	if (input >= 0x80) {
+	if (input & 0x80) {
 		cmd.op = RLE_OP_REP;
-		cmd.cnt = (int8_t)input - 125; // 3-130
+		cmd.cnt = (input & 0x7F) + 3; // 3-130
 	} else {
 		cmd.op = RLE_OP_CPY;
 		cmd.cnt = input + 1; // 1-128

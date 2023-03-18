@@ -99,9 +99,9 @@ ssize_t icns_decompress(const uint8_t *src, size_t slen, uint8_t *dest, size_t d
 
 		uint8_t cnt = 0;
 		uint8_t b = src[rp++];
-		if (b >= 0x80) {
+		if (b & 0x80) {
 			// REP
-			cnt = (uint8_t)(b - 125);
+			cnt = (b & 0x7F) + 3;
 			if (!(rp < slen)) {
 				RLE_ZOO_RETURN_ERR;
 			}
