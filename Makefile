@@ -31,6 +31,16 @@ else
 	MISCFLAGS+=$(DEVFLAGS)
 endif
 
+# GCC only
+ifdef ANALYZER
+	MISCFLAGS+=-fanalyzer
+endif
+
+# clang only
+ifdef SANITIZE
+	MISCFLAGS+=-fsanitize=memory
+endif
+
 CFLAGS=-std=c11 $(OPT) $(CWARNFLAGS) $(WARNFLAGS) $(MISCFLAGS)
 
 .PHONY: clean backup fuzz

@@ -55,6 +55,23 @@ encoders and decoders.
 variant used on some unknown data. It also acts as a demonstrator for using `rle-genops` tables. It
 is a work in progress though, and _encoding is broken_ for some tables.
 
+```
+Usage: ./rle-parser [-d|-e] [-s] [-o offset] [-n len] [-t variant|all] <file>
+
+options:
+  -d|-e		decode / encode(broken)
+  -s		silent -- no debug print
+  -o		file offset to start at
+  -n		number of bytes to process
+  -t		codec name, or 'all'
+
+Available variants:
+  goldbox
+  packbits
+  pcx
+  icns
+```
+
 Example parsing a packbits encoded file:
 
 ```bash

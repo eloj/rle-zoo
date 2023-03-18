@@ -30,7 +30,7 @@ static int debug_hex = 1;
 
 static uint8_t* make_rep(int ch, size_t n) {
 	uint8_t *res = malloc(n);
-	if (n) {
+	if (n && res) {
 		memset(res, ch, n);
 	}
 	return res;
@@ -38,9 +38,14 @@ static uint8_t* make_rep(int ch, size_t n) {
 
 static uint8_t* make_cpy(int ch, size_t n) {
 	uint8_t *res = malloc(n);
-	if (n) {
+	if (n && res) {
 		for (size_t i = 0 ; i < n ; ++i) {
-			res[i] = ((i & 1) == 0) ? ch : ch+1;
+			// res[i] = ((i & 1) == 0) ? ch : ch + 1; // clang analyzer raises false "warning: writing 1 byte into a region of size 0 [-Wstringop-overflow=]"
+			if (i & 1) {
+				res[i] = ch + 1;
+			} else {
+				res[i] = ch;
+			}
 		}
 	}
 	return res;
@@ -51,6 +56,7 @@ static int test_rep(void) {
 	size_t fails = 0;
 	for (size_t i=0 ; i <= 16 ; ++i) {
 		uint8_t *arr = make_rep('A', i);
+		assert(arr);
 
 		// Test limiter
 		size_t rep0 = rle_count_rep(arr, i, i / 2);
@@ -116,6 +122,7 @@ static int test_cpy(void) {
 	size_t fails = 0;
 	for (size_t i=0 ; i <= 16 ; ++i) {
 		uint8_t *arr = make_cpy('A', i);
+		assert(arr);
 
 		// Test limiter
 		size_t cpy0 = rle_count_cpy(arr, i, i / 2);

@@ -317,11 +317,11 @@ int main(int argc, char *argv []) {
 	p_len = fread(buf, 1, p_len, f);
 	fclose(f);
 
-	if (opt_all == 1) {
+	if (opt_all) {
 		int res;
 		for (size_t i = 0 ; i < RLE_ZOO_NUM_VARIANTS ; ++i) {
 			rle = rle8_variants[i];
-			if (opt_encode == 1) {
+			if (opt_encode) {
 				res = rle_parse_encode(rle, buf, p_len);
 			} else {
 				res = rle_parse_decode(rle, buf, p_len);
@@ -333,7 +333,8 @@ int main(int argc, char *argv []) {
 			}
 		}
 	} else {
-		if (opt_encode == 1) {
+		assert(rle);
+		if (opt_encode) {
 			rle_parse_encode(rle, buf, p_len);
 		} else {
 			rle_parse_decode(rle, buf, p_len);
