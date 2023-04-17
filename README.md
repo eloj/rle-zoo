@@ -121,7 +121,7 @@ Currently the following extraordinary specimens are grazing the fertile grounds 
 ### PackBits
 
 The `packbits` variant reportedly originates from the Apple Macintosh[^foottn1023], but spread far and wide from there, including
-into Electronic Arts IFF ILBM (unverified).
+into Electronic Arts IFF ILBM.
 
 #### PackBits Format
 
