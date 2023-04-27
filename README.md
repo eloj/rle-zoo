@@ -251,7 +251,9 @@ They also come in ascending order compared with packbits; more characters are co
 
 * Add 'all' variant compression reporting to `rle-zoo`
 * Make the rle-parse encoder follow limits/correct.
-* Add more animals. Potential candidates: BMP(?), TGA, EXEPACK(?!), ...
+* Perhaps abandon table idea, generate C source for the codec functions instead.
+* Support n-bit variants. At least nibbles + 16-bit, but why not everything.
+* Add more animals. Potential candidates: BMP(?), TGA, EXEPACK(?!), [many examples here](https://moddingwiki.shikadi.net/wiki/Category:Compression_algorithms)...
 * Improve `rle-zoo` to behave more like a standard UNIX filter.
 
 ## License
